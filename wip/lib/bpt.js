@@ -82,7 +82,6 @@ export class BPTree {
   }
 
   check(node) {
-    log('numKeys=' + this.numKeys);
     const ORDER = this.order;
     const MINKEYS = this.minKeys;
     const MAXKEYS = this.maxKeys;
@@ -146,7 +145,7 @@ export class BPTree {
     let node = root || this.tree;
 
     let index;
-    const path = node.t === 'leaf' ? [0] : [];
+    const path = [];
     while (node.t === 'branch') {
       index = 0;
       let found = false;
@@ -256,28 +255,15 @@ export class BPTree {
     this.check();
   }
 
-  _removeKey(key) {
-    const fetched = this.fetch(key, true, null, true);
-
-    if (!fetched) {
-      log('fetch failed');
-      return false;
-    }
-
-    let index = fetched.node.k.indexOf(key);
-    if (index !== -1) {
-      fetched.node.k.splice(index, 1);
-      fetched.node.v.splice(index, 1);
-    }
-
-    index = -1;
-    const length = fetched.path.length;
+  set(path, value) {
+    let index = -1;
+    const length = path.length;
     const lastIndex = length - 1;
     let nested = this.tree;
 
     while (nested && ++index < length) {
-      const currentKey = fetched.path[index];
-      let newValue = fetched.node;
+      const currentKey = path[index];
+      let newValue = value;
       if (index !== lastIndex) {
         newValue = nested[currentKey];
       }
@@ -286,6 +272,36 @@ export class BPTree {
       }
       nested = nested[currentKey];
     }
+  }
+
+  get(path, node) {
+    let object = node || this.tree;
+    let index = 0;
+    const length = path.length;
+
+    while (object && index < length) {
+      object = object.v[path[index++]];
+    }
+    return object;
+  }
+
+  pathToChildPath(path) {
+    return path.map((p) => ['v', p]).reduce((a, b) => a.concat(b));
+  }
+
+  _removeKey(key) {
+    const fetched = this.fetch(key, true, null, true);
+
+    if (!fetched) {
+      return false;
+    }
+
+    const index = fetched.node.k.indexOf(key);
+    if (index !== -1) {
+      fetched.node.k.splice(index, 1);
+      fetched.node.v.splice(index, 1);
+    }
+    this.set(fetched.path, fetched.node);
 
     this.numKeys--;
     return { leaf: fetched.node, path: fetched.path };
@@ -303,146 +319,147 @@ export class BPTree {
         3. update branch.k
     */
 
-    let node = this.tree;
-    const path = [];
-    // Find the leaf node for key, and the path down to it.
-    while (node.t === 'branch') {
-      let i = 0;
-      let found = false;
-      for (let nkl = node.k.length; i < nkl; i++) {
-        if (key < node.k[i]) {
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        i = node.k.length;
-      }
-      path.push({ t: node.t, k: node.k, v: node.v, i: i });
-      node = node.v[i];
-    }
-    log('path', path);
-
     // 1, 2
     const removed = this._removeKey(key);
     const leaf = removed.leaf;
-    const branchPos = removed.branchPos;
-    const leafPos = removed.leafPos;
+    const path = removed.path;
 
     // 2.1
-    const index = this.tree.v[branchPos].k.indexOf(key);
+    const parentPath = path.slice(0, path.length - 1);
+    let parent = this.get(parentPath);
+    let index = parent.k.indexOf(key);
 
     if (index !== -1) {
-      log(`found key int(${key}) in root.v[${branchPos}].k at index ${index}`);
-      this.tree.v[branchPos].k[index] = leaf.k[0];
-      log(`replace root.v[${branchPos}].k[${index}] with`, leaf.k[0]);
-    } else {
-      log(`NOT found key int(${key}) in root.v[${branchPos}].k`);
+      this.set(this.pathToChildPath(parentPath).concat(['k', index]), leaf.k[0]);
     }
 
     // 2.2
     if (leaf.k.length >= this.minKeys) {
-      log('half full, over!');
       return true;
     }
 
+    const leafIndex = path[path.length - 1];
+
     // 2.3.1
     let canBorrowRight = false;
-    if (leafPos < (this.tree.v.length - 1)) {
-      const rightSibling = this.tree.v[branchPos].v[leafPos + 1];
-      if (rightSibling && rightSibling.k.length > this.minKeys + 1) {
-        log(`borrowing from right ${rightSibling}`);
+    // if current leaf has a right sibling
+    if (leafIndex < parent.v.length - 1) {
+      const rightSibling = parent.v[leafIndex + 1];
+      if (rightSibling && rightSibling.k.length > this.minKeys) {
+        // can borrow from right because it's more than half full
         canBorrowRight = true;
-        const keyToBorrow = rightSibling.k[rightSibling.k.length + 1];
-        const valBorrowed = rightSibling.v[rightSibling.k.indexOf(keyToBorrow)];
-        log(`borrow leftmost (${keyToBorrow} => ${valBorrowed}) from right`, rightSibling);
-        this.tree.v[branchPos].v[leafPos].k.push(keyToBorrow);
-        this.tree.v[branchPos].v[leafPos].v.push(valBorrowed);
+        const keyToBorrow = rightSibling.k.shift();
+        const valBorrowed = rightSibling.v.shift();
+        leaf.k.push(keyToBorrow);
+        leaf.v.push(valBorrowed);
+        leaf.n = rightSibling.k[0];
+        const parentKeys = [];
+        for (let i = parent.v.length - 2; i >= 0; i--) {
+          const k = parent.v[i + 1].k[0];
+          parent.v[i].n = k;
+          parentKeys.unshift(k);
+        }
+        parent.k = parentKeys;
+        parent.v[leafIndex] = leaf;
+        parent.v[leafIndex + 1] = rightSibling;
       }
     }
 
     // 2.3.2
     let canBorrowLeft = false;
-    if (leafPos > 0) {
-      const leftSibling = this.tree.v[branchPos].v[leafPos - 1];
-      if (leftSibling && leftSibling.k.length > this.minKeys + 1) {
-        log(`borrowing from left ${leftSibling}`);
+    if (leafIndex > 0) {
+      const leftSibling = parent.v[leafIndex - 1];
+      if (leftSibling && leftSibling.k.length > this.minKeys) {
+        // can borrow from left because it's more than half full
         canBorrowLeft = true;
-        const keyToBorrow = leftSibling.k[leftSibling.k.length - 1];
-        const valBorrowed = leftSibling.v[leftSibling.k.indexOf(keyToBorrow)];
-        log(`borrow rightmost (${keyToBorrow} => ${valBorrowed}) from left`, leftSibling);
-        this.tree.v[branchPos].v[leafPos].k.unshift(keyToBorrow);
-        this.tree.v[branchPos].v[leafPos].v.unshift(valBorrowed);
+        leftSibling.k.pop();
+        leftSibling.v.pop();
+        const parentKeys = [];
+        for (let i = parent.v.length - 2; i >= 0; i--) {
+          const k = parent.v[i + 1].k[0];
+          parent.v[i].n = k;
+          parentKeys.unshift(k);
+        }
+        parent.k = parentKeys;
+        parent.v[leafIndex] = leaf;
+        parent.v[leafIndex - 1] = leftSibling;
       }
     }
 
     // 2.3.3 ??
-    if (canBorrowRight || canBorrowLeft) {
-      log('2.3.3');
-    } else {
-      if (leafPos > 0) {
-        let leftSibling = this.tree.v[branchPos].v[leafPos - 1];
-        log('merge with left sibling', leftSibling);
-        leftSibling = this._mergeLeft(leftSibling, leaf);
-        this.tree.v[branchPos].v[leafPos - 1] = leftSibling;
-        this.tree.v[branchPos].k.splice(0, 1);
-        this.tree.v[branchPos].v.splice(leafPos, 1);
-      } else if (leafPos < (this.tree.v.length - 1)) {
-        let rightSibling = this.tree.v[branchPos].v[leafPos + 1];
-        if (!rightSibling) {
-          rightSibling = this.tree.v[branchPos + 1].v[0];
-          if (rightSibling.k.length === this.order - 1) {
-            log('overpacked');
+    if (!canBorrowRight && !canBorrowLeft) {
+      index = path[path.length - 1];
+      let recurse = index !== undefined;
+      while (recurse) {
+        index = path.pop() || 0;
+        if (parent.v[index - 1]) {
+          // merging with left, deleting sibling
+          parent.v[index] = this._mergeLeft(parent.v[index - 1], parent.v[index]);
+          parent.v.splice(index, 1);
+        } else if (parent.v[index + 1]) {
+          // merging with right, deleting sibling
+          parent.v[index] = this._mergeRight(parent.v[index + 1], parent.v[index]);
+          parent.v.splice(index + 1, 1);
+          const slice = parent.v.slice(1);
+          if (slice.length) {
+            parent.k = slice.map((n) => n.k[0]);
           }
         }
-        log('merge with right sibling', rightSibling);
-        rightSibling = this._mergeRight(rightSibling, leaf);
-        log('rightSibling once merged is now', rightSibling);
-        this.tree.v[branchPos].v[leafPos] = rightSibling;
-        this.tree.v[branchPos].k.splice(0, 1);
-        this.tree.v[branchPos].v.splice(leafPos, 1);
+        parent = this.get(path);
+        while (path.length && index < parent.v.length && parent.v[index].v[0].t !== 'branch') {
+          path.pop();
+          parent = this.get(path);
+        }
 
-        if (this.tree.v[branchPos].v.length < this.minKeys) {
-          log('underpop branch');
-          for (let i = this.tree.v[branchPos].v.length - 1; i >= 0; i--) {
-            this.tree.v[branchPos + 1].v.unshift(this.tree.v[branchPos].v[i]);
-          }
-          this.tree.v.splice(branchPos, 1);
-          if (this.tree.v.length < 2) {
-            log('underpop root');
-            if (this.tree.v[branchPos].v.length > 3) {
-              log('split', this.tree.v[branchPos].v);
-              const mid = this.minKeys;
-              const leftContent = this.tree.v[branchPos].v.slice(0, mid);
-              const rightContent = this.tree.v[branchPos].v.slice(mid);
-              const left = {t: 'branch', k: [leftContent[leftContent.length - 1].k[0]], v: leftContent};
-              const right = {t: 'branch', k: [rightContent[rightContent.length - 1].k[0]], v: rightContent};
-              this.tree.t = 'branch';
-              this.tree.n =
-              this.tree.k = [right.v[0].k[0]];
-              this.tree.v = [left, right];
-            } else {
-              log('hoist');
-              this.tree.t = 'leaf';
-              this.tree = this.tree.v[branchPos];
-              this.tree.k = this.tree.v.slice(1).map((n) => n.k[0]);
+        // underpopulated root
+        if (this.tree.v.length < 2) {
+          // need to split
+          if (this.tree.v[index].v.length > this.maxKeys) {
+            const mid = this.minKeys;
+            const leftContent = this.tree.v[index].v.slice(0, mid);
+            const rightContent = this.tree.v[index].v.slice(mid);
+            const left = {t: 'branch', k: [leftContent[leftContent.length - 1].k[0]], v: leftContent};
+            const right = {t: 'branch', k: [rightContent[rightContent.length - 1].k[0]], v: rightContent};
+            this.tree.t = 'branch';
+            this.tree.n = null;
+            this.tree.k = [right.v[0].k[0]];
+            this.tree.v = [left, right];
+          } else { // need to hoist
+            this.tree.t = 'leaf';
+            this.tree = this.tree.v[index];
+            const slice = this.tree.v.slice(1);
+            if (slice.length && slice[0].t) {
+              this.tree.k = slice.map((n) => n.k[0]);
             }
+          }
+        }
+        if (index === undefined) {
+          recurse = false;
+          break;
+        }
+        recurse = false;
+        for (let i = 0; i < parent.v.length; i++) {
+          if (parent.v[i].v.length < this.minKeys) {
+            recurse = true;
           }
         }
       }
     }
   }
 
-  _mergeLeft(sibling, leaf) {
-    sibling.k = sibling.k.concat(leaf.k);
-    sibling.v = sibling.v.concat(leaf.v);
-    sibling.n = leaf.n;
-    return sibling;
+  _mergeLeft(dest, src) {
+    dest.k = dest.k.concat(src.k);
+    dest.v = dest.v.concat(src.v);
+    dest.n = src.n;
+    return dest;
   }
 
-  _mergeRight(sibling, leaf) {
-    sibling.k = leaf.k.concat(sibling.k);
-    sibling.v = leaf.v.concat(sibling.v);
-    return sibling;
+  _mergeRight(dest, src) {
+    if (src.t !== 'leaf') {
+      src.v[src.v.length - 1].n = dest.v[0].k[0];
+    }
+    dest.k = src.k.concat(dest.k);
+    dest.v = src.v.concat(dest.v);
+    return dest;
   }
 }
