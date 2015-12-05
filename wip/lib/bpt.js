@@ -260,17 +260,35 @@ export class BPTree {
     const fetched = this.fetch(key, true, null, true);
 
     if (!fetched) {
+      log('fetch failed');
       return false;
     }
 
-    const index = fetched.node.k.indexOf(key);
+    let index = fetched.node.k.indexOf(key);
     if (index !== -1) {
       fetched.node.k.splice(index, 1);
       fetched.node.v.splice(index, 1);
     }
-    this.tree.v[fetched.location.branch].v[fetched.location.leaf] = fetched.node;
+
+    index = -1;
+    const length = fetched.path.length;
+    const lastIndex = length - 1;
+    let nested = this.tree;
+
+    while (nested && ++index < length) {
+      const currentKey = fetched.path[index];
+      let newValue = fetched.node;
+      if (index !== lastIndex) {
+        newValue = nested[currentKey];
+      }
+      if (newValue) {
+        nested[currentKey] = newValue;
+      }
+      nested = nested[currentKey];
+    }
+
     this.numKeys--;
-    return { leaf: fetched.node, branchPos: fetched.location.branch, leafPos: fetched.location.leaf };
+    return { leaf: fetched.node, path: fetched.path };
   }
 
   _remove(key) {
