@@ -145,29 +145,28 @@ export class BPTree {
   fetch(needleKey, getLeaf, root, location) {
     let node = root || this.tree;
 
-    let leafPos;
-    let branchPos;
+    let index;
+    const path = node.t === 'leaf' ? [0] : [];
     while (node.t === 'branch') {
-      branchPos = 0;
-      leafPos = 0;
+      index = 0;
       let found = false;
-      for (let kl = node.k.length; leafPos < kl; leafPos++) {
-        if (node.k[leafPos] > needleKey) {
+      for (let kl = node.k.length; index < kl; index++) {
+        if (node.k[index] > needleKey) {
           found = true;
-          branchPos = leafPos;
           break;
         }
       }
       if (!found) {
-        leafPos = node.v.length - 1;
+        index = node.v.length - 1;
       }
-      node = node.v[leafPos];
+      node = node.v[index];
+      path.push(index);
     }
 
     for (let j = 0, kl = node.k.length; j < kl; j++) {
       if (needleKey === node.k[j]) {
         if (location) {
-          return { node: getLeaf ? node : node.v[j], location: { branch: branchPos, leaf: leafPos } };
+          return { node: getLeaf ? node : node.v[j], path };
         }
         if (getLeaf) {
           return node;
