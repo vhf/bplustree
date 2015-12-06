@@ -299,23 +299,17 @@ export class BPTree {
   }
 
   remove(key) {
-    /*
-    1. get leaf for key
-    2. remove key from leaf
-      1. if key in branch.k, replace it with new smallest key in leaf
-      2. if leaf is at least half full, finish
-      3. else borrow
-        1. if rightSibling is more than half full, borrow leftmost value
-        2. if leftSibling is more than half full, borrow rightmost value
-        3. update branch.k
-    */
+    this.reallyRemove(key);
+    this.check();
+  }
 
-    // 1, 2
+  reallyRemove(key) {
+    // get leaf for key, remove key from leaf
     const removed = this._removeKey(key);
     const leaf = removed.leaf;
     const path = removed.path;
 
-    // 2.1
+    // if key in branch.k, replace it with new smallest key in leaf
     const parentPath = path.slice(0, path.length - 1);
     let parent = this.get(parentPath);
     let index = parent.k.indexOf(key);
@@ -324,20 +318,21 @@ export class BPTree {
       this.set(this.pathToChildPath(parentPath).concat(['k', index]), leaf.k[0]);
     }
 
-    // 2.2
+    // if leaf is at least half full, terminate
     if (leaf.k.length >= this.minKeys) {
       return true;
     }
 
     const leafIndex = path[path.length - 1];
 
-    // 2.3.1
+    // else borrow
+
+    // if rightSibling is more than half full, borrow leftmost value
     let canBorrowRight = false;
-    // if current leaf has a right sibling
     if (leafIndex < parent.v.length - 1) {
       const rightSibling = parent.v[leafIndex + 1];
       if (rightSibling && rightSibling.k.length > this.minKeys) {
-        // can borrow from right because it's more than half full
+        // can borrow from right because it is more than half full
         canBorrowRight = true;
         const keyToBorrow = rightSibling.k.shift();
         const valBorrowed = rightSibling.v.shift();
@@ -356,12 +351,12 @@ export class BPTree {
       }
     }
 
-    // 2.3.2
+    // if leftSibling is more than half full, borrow rightmost value
     let canBorrowLeft = false;
     if (leafIndex > 0) {
       const leftSibling = parent.v[leafIndex - 1];
       if (leftSibling && leftSibling.k.length > this.minKeys) {
-        // can borrow from left because it's more than half full
+        // can borrow from left because it is more than half full
         canBorrowLeft = true;
         leftSibling.k.pop();
         leftSibling.v.pop();
@@ -377,7 +372,6 @@ export class BPTree {
       }
     }
 
-    // 2.3.3 ??
     if (!canBorrowRight && !canBorrowLeft) {
       index = path[path.length - 1];
       let recurse = index !== undefined;
@@ -385,12 +379,14 @@ export class BPTree {
         index = path.pop() || 0;
         if (parent.v[index - 1]) {
           // merging with left, deleting sibling
+          // node becomes (sibling merged with node)
           parent.v[index] = this._mergeLeft(parent.v[index - 1], parent.v[index]);
-          parent.v.splice(index, 1);
+          parent.v.splice(index, 1); // delete what??
         } else if (parent.v[index + 1]) {
           // merging with right, deleting sibling
+          // node becomes (node merged with sibling)
           parent.v[index] = this._mergeRight(parent.v[index + 1], parent.v[index]);
-          parent.v.splice(index + 1, 1);
+          parent.v.splice(index + 1, 1); // delete sibling
           const slice = parent.v.slice(1);
           if (slice.length) {
             parent.k = slice.map((n) => n.k[0]);
@@ -402,10 +398,10 @@ export class BPTree {
           parent = this.get(path);
         }
 
-        // underpopulated root
         if (this.tree.v.length < 2) {
-          // need to split
+          // underpopulated root
           if (this.tree.v[index].v.length > this.maxKeys) {
+            // need to split
             const mid = this.minKeys;
             const leftContent = this.tree.v[index].v.slice(0, mid);
             const rightContent = this.tree.v[index].v.slice(mid);
@@ -415,7 +411,8 @@ export class BPTree {
             this.tree.n = null;
             this.tree.k = [right.v[0].k[0]];
             this.tree.v = [left, right];
-          } else { // need to hoist
+          } else {
+            // need to hoist
             this.tree.t = 'leaf';
             this.tree = this.tree.v[index];
             const slice = this.tree.v.slice(1);
