@@ -41,14 +41,14 @@ export class BPTree {
     let index = leaf.k.indexOf(lowerBound);
 
     while (leaf.k[index] <= upperBound) {
-      if (leaf.k[index] === upperBound) {
+      if (this.cmpFn(leaf.k[index], upperBound) === 0) {
         result.push(leaf.v[index]);
         break;
       }
-      if (leaf.k[leaf.k.length - 1] === upperBound) {
+      if (this.cmpFn(leaf.k[leaf.k.length - 1], upperBound) === 0) {
         result = result.concat(leaf.v);
         break;
-      } else if (leaf.k[leaf.k.length - 1] < upperBound) {
+      } else if (this.cmpFn(leaf.k[leaf.k.length - 1], upperBound) === -1) {
         result = result.concat(leaf.v.slice(index));
         if (leaf.n === null) {
           // if the tree is OK, we should never end up here
@@ -72,11 +72,6 @@ export class BPTree {
   }
 
   check(nodeToCheck) {
-    const ORDER = this.order;
-    const MINKEYS = this.minKeys;
-    const MAXKEYS = this.maxKeys;
-    const CMPFN = this.cmpFn;
-
     let tree = nodeToCheck || this.tree;
 
     let depth = 0;
@@ -91,18 +86,18 @@ export class BPTree {
       }
     }
 
-    function checking(currentNode, currentDepth, lo, hi) {
+    function checking(self, currentNode, currentDepth, lo, hi) {
       const node = currentNode;
       const keysLength = node.k.length;
 
-      assert(keysLength < ORDER, 'Overflowed node');
+      assert(keysLength < self.order, 'Overflowed node');
 
       for (let i = 0, kl = keysLength - 1; i < kl; i++) {
-        assert(CMPFN(node.k[i], node.k[i + 1]) === -1, 'Disordered or duplicate key');
+        assert(self.cmpFn(node.k[i], node.k[i + 1]) === -1, 'Disordered or duplicate key');
       }
 
-      assert(lo.length === 0 || CMPFN(lo[0], node.k[0]) < 1, 'lo error');
-      assert(hi.length === 0 || CMPFN(node.k[keysLength - 1], hi[0]) === -1, 'hi error');
+      assert(lo.length === 0 || self.cmpFn(lo[0], node.k[0]) < 1, 'lo error');
+      assert(hi.length === 0 || self.cmpFn(node.k[keysLength - 1], hi[0]) === -1, 'hi error');
 
       if (node.t === 'branch') {
         const kids = node.v;
@@ -111,7 +106,7 @@ export class BPTree {
         if (currentDepth === 0) {
           assert(kidsLength >= 2, 'Underpopulated root');
         } else {
-          assert(kidsLength >= MINKEYS, 'Underpopulated branch');
+          assert(kidsLength >= self.minKeys, 'Underpopulated branch');
         }
 
         assert(keysLength === kidsLength - 1, 'keys and kids don\'t correspond');
@@ -119,14 +114,14 @@ export class BPTree {
         for (let i = 0; i < kidsLength; i++) {
           const newLo = (i === 0 ? lo : [node.k[i - 1]]);
           const newHi = (i === keysLength ? hi : [node.k[i]]);
-          checking(kids[i], currentDepth + 1, newLo, newHi);
+          checking(self, kids[i], currentDepth + 1, newLo, newHi);
         }
       } else if (node.t === 'leaf') {
         const v = node.v;
         assert(currentDepth === depth, 'Leaves at different depths');
         assert(keysLength === v.length, 'keys and values don\'t correspond');
         if (currentDepth > 0) {
-          assert(v.length >= MINKEYS, 'Underpopulated leaf');
+          assert(v.length >= self.minKeys, 'Underpopulated leaf');
         }
       } else {
         assert(false, 'Bad type');
@@ -134,7 +129,7 @@ export class BPTree {
       return true;
     }
 
-    return checking(nodeToCheck || this.tree, 0, [], [], null);
+    return checking(this, nodeToCheck || this.tree, 0, [], []);
   }
 
   fetch(needleKey, getLeaf, root, location) {
@@ -146,7 +141,7 @@ export class BPTree {
       index = 0;
       let found = false;
       for (let kl = node.k.length; index < kl; index++) {
-        if (node.k[index] > needleKey) {
+        if (this.cmpFn(node.k[index], needleKey) === 1) {
           found = true;
           break;
         }
@@ -159,7 +154,7 @@ export class BPTree {
     }
 
     for (let j = 0, kl = node.k.length; j < kl; j++) {
-      if (needleKey === node.k[j]) {
+      if (this.cmpFn(needleKey, node.k[j]) === 0) {
         if (location) {
           return { node: getLeaf ? node : node.v[j], path };
         }
@@ -167,7 +162,7 @@ export class BPTree {
           return node;
         }
         return node.v[j];
-      } else if (node.k[j] > needleKey) {
+      } else if (this.cmpFn(node.k[j], needleKey) === 1) {
         break; // just to finish quicker; not needed for correctness
       }
     }
@@ -200,11 +195,11 @@ export class BPTree {
     let found = false;
     const nkl = node.k.length;
     for (; i < nkl; i++) {
-      if (newKey === node.k[i]) {
+      if (this.cmpFn(newKey, node.k[i]) === 0) {
         // newKey isn't actually new, so the structure goes unchanged.
         node.v[i] = value;
         return;
-      } else if (newKey < node.k[i]) {
+      } else if (this.cmpFn(newKey, node.k[i]) === -1) {
         found = true;
         break;
       }
