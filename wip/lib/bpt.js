@@ -473,27 +473,18 @@ export class BPTree {
           again = false;
         }
 
-        let merged = false;
-        if (parent.v[index - 1]) {
-          merged = 'left';
-          log('merge left');
+        if (parent.v[index - 1] && parent.v[index - 1].v.length + parent.v[index].v.length <= this.maxKeys) {
+          log('merge left, will have');
           // merging with left, deleting sibling
           // node becomes (sibling merged with node)
           parent.v[index] = this._mergeLeft(parent.v[index - 1], parent.v[index]);
-          parent.v.splice(index, 1); // delete now merge sibling
-          // log(' ml k', parent.k, '->');
-          // parent.k.splice(0, index);
-          // log('    ', parent.k);
-        } else if (parent.v[index + 1]) {
-          merged = 'right';
-          log('merge right');
+          parent.v.splice(index, 1); // delete now merged sibling
+        } else if (parent.v[index + 1] && parent.v[index].v.length + parent.v[index + 1].v.length <= this.maxKeys) {
+          log('merge right, will have');
           // merging with right, deleting sibling
           // node becomes (node merged with sibling)
           parent.v[index] = this._mergeRight(parent.v[index + 1], parent.v[index]);
-          parent.v.splice(index + 1, 1); // delete sibling
-          // log(' mr k', parent.k, '->');
-          // parent.k.splice(0, index + 1); // remove sibling k from parent k
-          // log('    ', parent.k);
+          parent.v.splice(index + 1, 1); // delete now merged sibling
         }
 
         if (this.tree.v.length < 2) {
