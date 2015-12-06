@@ -1,17 +1,3 @@
-const util = require('util');
-
-const log = (...obj) => {
-  const result = [];
-  for (let i = 0; i < obj.length; i++) {
-    if (typeof obj[i] === 'string') {
-      result.push(obj[i]);
-    } else {
-      result.push(util.inspect(obj[i], false, null));
-    }
-  }
-  console.log(...result);
-};
-
 export class BPTree {
   constructor(order, cmpFn) {
     this.order = order || 4;
@@ -85,56 +71,13 @@ export class BPTree {
     return result;
   }
 
-  check(node) {
+  check(nodeToCheck) {
     const ORDER = this.order;
     const MINKEYS = this.minKeys;
     const MAXKEYS = this.maxKeys;
-    function checking(depth, currentNode, currentDepth, lo, hi) {
-      const node = currentNode;
+    const CMPFN = this.cmpFn;
 
-      if (node.k.length >= ORDER) { log('a', node); throw new Error('Overflowed node'); }
-
-      for (let i = 0, kl = node.k.length - 1; i < kl; i++) {
-        if (node.k[i] >= node.k[i + 1]) { log('a', node); throw new Error('Disordered or duplicate key'); }
-      }
-
-      if (!lo.length && lo[0] > node.k[0]) throw new Error('lo error');
-      if (!hi.length && node.k[-1] >= hi[0]) throw new Error('hi error');
-
-      if (node.t === 'branch') {
-        const kids = node.v;
-        if (currentDepth === 0) {
-          if (kids.length < 2) { log('b', node); throw new Error('Underpopulated root'); }
-          if (kids.length > MAXKEYS) { log('c', `(${kids.length} > ${MAXKEYS})`, node); throw new Error('Overpopulated root'); }
-        } else {
-          if (kids.length < MINKEYS) { log('d', node); throw new Error('Underpopulated branch'); }
-          if (kids.length > MAXKEYS) { log('e', node); throw new Error('Overpopulated branch'); }
-        }
-        if (node.k.length !== kids.length - 1) throw new Error('keys and kids don\'t correspond');
-        if (lo.length && lo[0] >= node.k[0]) throw new Error('lo error');
-        if (hi.length && node.k[node.k.length - 1] >= hi[0]) throw new Error('hi error');
-
-        for (let i = 0; i < kids.length; i++) {
-          const newLo = (i === 0 ? lo : [node.k[i - 1]]);
-          const newHi = (i === node.k.length ? hi : [node.k[i]]);
-          checking(depth, kids[i], currentDepth + 1, newLo, newHi);
-        }
-      } else if (node.t === 'leaf') {
-        if (currentDepth !== depth) throw new Error('Leaves at different depths');
-        const v = node.v;
-        if (node.k.length !== v.length) throw new Error('keys and values don\'t correspond');
-        if (currentDepth > 0) {
-          if (MINKEYS > v.length) { log('f', node); throw new Error('Underpopulated leaf');}
-        }
-        if (lo.length && lo[0] !== node.k[0]) throw new Error('lo error (2)');
-        if (hi.length && node.k[node.k.length - 1] >= hi[0]) throw new Error('hi error (2)');
-      } else {
-        throw new Error('Bad type');
-      }
-      return true;
-    }
-
-    let tree = node || this.tree;
+    let tree = nodeToCheck || this.tree;
 
     let depth = 0;
     while (tree.t === 'branch') {
@@ -142,7 +85,56 @@ export class BPTree {
       depth += 1;
     }
 
-    return checking(depth, node || this.tree, 0, [], []);
+    function assert(expr, msg) {
+      if (!expr) {
+        throw new Error(msg);
+      }
+    }
+
+    function checking(currentNode, currentDepth, lo, hi) {
+      const node = currentNode;
+      const keysLength = node.k.length;
+
+      assert(keysLength < ORDER, 'Overflowed node');
+
+      for (let i = 0, kl = keysLength - 1; i < kl; i++) {
+        assert(CMPFN(node.k[i], node.k[i + 1]) === -1, 'Disordered or duplicate key');
+      }
+
+      assert(lo.length === 0 || CMPFN(lo[0], node.k[0]) < 1, 'lo error');
+      assert(hi.length === 0 || CMPFN(node.k[keysLength - 1], hi[0]) === -1, 'hi error');
+
+      if (node.t === 'branch') {
+        const kids = node.v;
+        const kidsLength = kids.length;
+
+        if (currentDepth === 0) {
+          assert(kidsLength >= 2, 'Underpopulated root');
+        } else {
+          assert(kidsLength >= MINKEYS, 'Underpopulated branch');
+        }
+
+        assert(keysLength === kidsLength - 1, 'keys and kids don\'t correspond');
+
+        for (let i = 0; i < kidsLength; i++) {
+          const newLo = (i === 0 ? lo : [node.k[i - 1]]);
+          const newHi = (i === keysLength ? hi : [node.k[i]]);
+          checking(kids[i], currentDepth + 1, newLo, newHi);
+        }
+      } else if (node.t === 'leaf') {
+        const v = node.v;
+        assert(currentDepth === depth, 'Leaves at different depths');
+        assert(keysLength === v.length, 'keys and values don\'t correspond');
+        if (currentDepth > 0) {
+          assert(v.length >= MINKEYS, 'Underpopulated leaf');
+        }
+      } else {
+        assert(false, 'Bad type');
+      }
+      return true;
+    }
+
+    return checking(nodeToCheck || this.tree, 0, [], [], null);
   }
 
   fetch(needleKey, getLeaf, root, location) {
@@ -234,7 +226,7 @@ export class BPTree {
     const mid = Math.floor(this.order / 2);
     let tween = node.k[mid];
     let left = { t: 'leaf', k: node.k.slice(0, mid), v: node.v.slice(0, mid), n: node.k[mid] };
-    let right = { t: 'leaf', k: node.k.slice(mid), v: node.v.slice(mid), n: null };
+    let right = { t: 'leaf', k: node.k.slice(mid), v: node.v.slice(mid), n: node.n };
 
     // ...and propagate the split back up the path.
     while (path.length) {
@@ -242,7 +234,7 @@ export class BPTree {
       node.k.splice(node.i, 0, tween);
       node.v[node.i] = left;
       node.v.splice(node.i + 1, 0, right);
-      if (node.k.length < this.order - 1) {
+      if (node.k.length < this.maxKeys) {
         return;
       }
       tween = node.k[mid - 1];
