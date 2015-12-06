@@ -50,6 +50,8 @@ describe('BPTree', () => {
           n: null };
     tree.store(4, 'd');
     assert.deepEqual(tree.tree, e);
+    tree = setup();
+    tree.check();
   });
 
   it('should fetch', () => {
@@ -91,14 +93,9 @@ describe('BPTree', () => {
   });
 
   it('should remove val', () => {
-    assert.equal(tree.removeKey(9), false);
-    tree = setup();
-    tree.removeKey(10, tree.fetch(10, true));
-    assert.deepEqual(tree.repr(), { '1': 'z', '2': 'b', '3': 'c', '4': 'd', '5': 'e', '6': 'f', '7': 'g', '8': 'h', '11': 'n', '12': 'p' });
-    tree = setup();
-    tree.removeKey(8);
-    assert.deepEqual(tree.repr(), { '1': 'z', '2': 'b', '3': 'c', '4': 'd', '5': 'e', '6': 'f', '7': 'g', '10': 'm', '11': 'n', '12': 'p' });
-    assert(tree.check());
+    const vals = [7, 3, 11, 4, 1, 10, 8, 6, 2, 5, 12];
+    for (let i = 0; i < vals.length; i++) {
+      tree.remove(vals[i]);
+    }
   });
-
 });
