@@ -1,3 +1,5 @@
+import {log} from '../utils/log';
+
 export class BPTree {
   constructor(order, cmpFn) {
     this.order = order || 4;
@@ -96,6 +98,17 @@ export class BPTree {
         assert(self.cmpFn(node.k[i], node.k[i + 1]) === -1, 'Disordered or duplicate key');
       }
 
+      if (lo.length !== 0 && self.cmpFn(lo[0], node.k[0]) > 0) {
+        log('lo', lo, '<=', node.k[0]);
+        log(node);
+      }
+      if (hi.length !== 0 && self.cmpFn(node.k[keysLength - 1], hi[0]) > -1) {
+        if (node.t === 'branch' && node.v.length < self.minKeys) {
+          log('Underpop branch!');
+        }
+        log('hi', node.k[keysLength - 1], '<', hi);
+        log(node);
+      }
       assert(lo.length === 0 || self.cmpFn(lo[0], node.k[0]) < 1, 'lo error');
       assert(hi.length === 0 || self.cmpFn(node.k[keysLength - 1], hi[0]) === -1, 'hi error');
 
@@ -109,6 +122,10 @@ export class BPTree {
           assert(kidsLength >= self.minKeys, 'Underpopulated branch');
         }
 
+        if (keysLength !== kidsLength - 1) {
+          log('node has keysLength', keysLength, 'instead of', kidsLength - 1);
+          log(node.k, 'should be', node.v.slice(1).map((o) => o.v[0].k[0]));
+        }
         assert(keysLength === kidsLength - 1, 'keys and kids don\'t correspond');
 
         for (let i = 0; i < kidsLength; i++) {
@@ -298,6 +315,76 @@ export class BPTree {
     return { leaf: fetched.node, path: fetched.path };
   }
 
+  c(path, maxDepth) {
+    const pathLength = path.length;
+    switch (maxDepth) {
+    case 1:
+      switch (pathLength) {
+      case 0:
+        return (o) => o.v[0].k[0];
+      case 1:
+        return (o) => o.k[0];
+      default:
+        throw new Error('wat');
+      }
+      break;
+    case 2:
+      switch (pathLength) {
+      case 0:
+        return (o) => o.v[0].v[0].k[0];
+      case 1:
+        return (o) => o.v[0].k[0];
+      case 2:
+        return (o) => o.k[0];
+      default:
+        throw new Error('wat');
+      }
+      break;
+    case 3:
+      switch (pathLength) {
+      case 0:
+        return (o) => o.v[0].v[0].v[0].k[0];
+      case 1:
+        return (o) => o.v[0].v[0].k[0];
+      case 2:
+        return (o) => o.v[0].k[0];
+      case 3:
+        return (o) => o.k[0];
+      default:
+        throw new Error('wat');
+      }
+      break;
+    default:
+      throw new Error('wat');
+    }
+  }
+
+  fixKeys() {
+    let result = [];
+    function walk(node, depth, path) {
+      if (node.t === 'branch') {
+        const kids = node.v;
+        for (let i = 0, kl = kids.length; i < kl; i++) {
+          if (kids[i].t === 'branch') {
+            const newPath = path.slice(0, depth).concat([i]);
+            result.push(newPath);
+            walk(kids[i], depth + 1, newPath);
+          }
+        }
+      }
+    }
+    walk(this.tree, 0, []);
+    result = result.sort((a, b) => (a.length > b.length) ? -1 : ((a.length < b.length) ? 1 : 0)); // eslint-disable-line
+
+    result.forEach((path) => {
+      const sub = this.get(path);
+      sub.k = sub.v.slice(1).map(this.c(path, result[0].length));
+    });
+    this.tree.k = this.tree.v.slice(1).map(this.c([], result[0].length));
+
+    return result;
+  }
+
   remove(key) {
     this.reallyRemove(key);
     this.check();
@@ -332,6 +419,7 @@ export class BPTree {
     if (leafIndex < parent.v.length - 1) {
       const rightSibling = parent.v[leafIndex + 1];
       if (rightSibling && rightSibling.k.length > this.minKeys) {
+        log('borrow from right');
         // can borrow from right because it is more than half full
         canBorrowRight = true;
         const keyToBorrow = rightSibling.k.shift();
@@ -356,6 +444,7 @@ export class BPTree {
     if (leafIndex > 0) {
       const leftSibling = parent.v[leafIndex - 1];
       if (leftSibling && leftSibling.k.length > this.minKeys) {
+        log('borrow from left');
         // can borrow from left because it is more than half full
         canBorrowLeft = true;
         leftSibling.k.pop();
@@ -373,29 +462,38 @@ export class BPTree {
     }
 
     if (!canBorrowRight && !canBorrowLeft) {
-      index = path[path.length - 1];
-      let recurse = index !== undefined;
-      while (recurse) {
-        index = path.pop() || 0;
+      let again = true;
+      while (again) {
+        log('d=' + (path.length), 'entering loop', path);
+        parent = this.get(path);
+        if (path.length) {
+          index = path.pop();
+        } else {
+          index = 0;
+          again = false;
+        }
+
+        let merged = false;
         if (parent.v[index - 1]) {
+          merged = 'left';
+          log('merge left');
           // merging with left, deleting sibling
           // node becomes (sibling merged with node)
           parent.v[index] = this._mergeLeft(parent.v[index - 1], parent.v[index]);
-          parent.v.splice(index, 1); // delete what??
+          parent.v.splice(index, 1); // delete now merge sibling
+          // log(' ml k', parent.k, '->');
+          // parent.k.splice(0, index);
+          // log('    ', parent.k);
         } else if (parent.v[index + 1]) {
+          merged = 'right';
+          log('merge right');
           // merging with right, deleting sibling
           // node becomes (node merged with sibling)
           parent.v[index] = this._mergeRight(parent.v[index + 1], parent.v[index]);
           parent.v.splice(index + 1, 1); // delete sibling
-          const slice = parent.v.slice(1);
-          if (slice.length) {
-            parent.k = slice.map((n) => n.k[0]);
-          }
-        }
-        parent = this.get(path);
-        while (path.length && index < parent.v.length && parent.v[index].v[0].t !== 'branch') {
-          path.pop();
-          parent = this.get(path);
+          // log(' mr k', parent.k, '->');
+          // parent.k.splice(0, index + 1); // remove sibling k from parent k
+          // log('    ', parent.k);
         }
 
         if (this.tree.v.length < 2) {
@@ -421,17 +519,8 @@ export class BPTree {
             }
           }
         }
-        if (index === undefined) {
-          recurse = false;
-          break;
-        }
-        recurse = false;
-        for (let i = 0; i < parent.v.length; i++) {
-          if (parent.v[i].v.length < this.minKeys) {
-            recurse = true;
-          }
-        }
       }
+      this.fixKeys();
     }
   }
 
