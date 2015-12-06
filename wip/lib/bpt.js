@@ -64,6 +64,10 @@ export class BPTree {
         break;
       } else if (leaf.k[leaf.k.length - 1] < upperBound) {
         result = result.concat(leaf.v.slice(index));
+        if (leaf.n === null) {
+          // if the tree is OK, we should never end up here
+          break;
+        }
         leaf = this.fetch(leaf.n, true);
         index = 0;
       } else {
@@ -307,7 +311,7 @@ export class BPTree {
     return { leaf: fetched.node, path: fetched.path };
   }
 
-  _remove(key) {
+  remove(key) {
     /*
     1. get leaf for key
     2. remove key from leaf
