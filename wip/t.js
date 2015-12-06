@@ -18,38 +18,48 @@ const setup = () => {
   tree.store(1, 'a');
   tree.store(2, 'b');
   tree.store(3, 'c');
-  // log(tree.tree);
-  tree.store(4, 'd');
-  tree.store(5, 'e');
-  tree.store(6, 'f');
-  // log(tree.tree);
-  tree.store(7, 'g');
-  tree.store(8, 'h');
-  tree.store(9, 'i');
-  // log(tree.tree);
-  tree.store(10, 'j');
-  tree.store(11, 'k');
+  // // log(tree.tree);
+  // tree.store(4, 'd');
+  // tree.store(5, 'e');
+  // tree.store(6, 'f');
+  // // log(tree.tree);
+  // tree.store(7, 'g');
+  // tree.store(8, 'h');
+  // tree.store(9, 'i');
+  // // log(tree.tree);
+  // tree.store(10, 'j');
+  // tree.store(11, 'k');
   return tree;
 };
 
 const tree = setup();
 log('tree:', tree.tree);
 
-log('r7');
-tree._remove(7);
-log('tree:', tree.tree);
+// log(''); log('r7');
+// tree._remove(7);
+// tree.check();
+// log('tree:', tree.tree);
 
-// log('r2');
-// tree._remove(2);
+log(''); log('r2');
+tree._remove(2);
+tree.check();
+log(tree.tree);
+
+log(''); log('r1');
+tree._remove(1);
+tree.check();
+log(tree.tree);
+
+// log(''); log('r8');
+// tree._remove(8);
 // tree.check();
 // log(tree.tree);
 
-// log('r1');
-// tree._remove(1);
-// tree.check();
-// log(tree.tree);
+// const rest = [3, 5, 4, 9, 11, 10, 6];
 
-// log('r3');
-// tree._remove(3);
-// tree.check();
-// log(tree.tree);
+// for (let i = 0; i < rest.length; i++) {
+//   log(''); log('r' + rest[i]);
+//   tree._remove(rest[i]);
+//   tree.check();
+//   log(tree.tree);
+// }

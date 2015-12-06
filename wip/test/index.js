@@ -93,9 +93,13 @@ describe('BPTree', () => {
   });
 
   it('should remove val', () => {
-    const vals = [7, 3, 11, 4, 1, 10, 8, 6, 2, 5, 12];
-    for (let i = 0; i < vals.length; i++) {
-      tree.remove(vals[i]);
+    for (let i = 1; i < 9; i++) {
+      log(9 - i);
+      tree.remove(9 - i);
     }
+    // const vals = [7, 3, 11, 4, 1, 10, 8, 6, 2, 5, 12];
+    // for (let i = 0; i < vals.length; i++) {
+    //   tree.remove(vals[i]);
+    // }
   });
 });
