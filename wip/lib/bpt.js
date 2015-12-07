@@ -14,8 +14,8 @@ export class BPTree {
     this.tree = { t: 'leaf', k: [], v: [], n: null };
   }
 
-  repr() {
-    const result = {};
+  repr(keys) {
+    const result = keys ? [] : {};
     function walk(node) {
       if (node.t === 'branch') {
         const kids = node.v;
@@ -24,7 +24,11 @@ export class BPTree {
         }
       } else if (node.t === 'leaf') {
         for (let i = 0, nkl = node.k.length; i < nkl; i++) {
-          result[node.k[i]] = node.v[i];
+          if (keys) {
+            result.push(node.k[i]);
+          } else {
+            result[node.k[i]] = node.v[i];
+          }
         }
       }
     }
@@ -82,6 +86,8 @@ export class BPTree {
       depth += 1;
     }
 
+    const leafCount = this.repr(true).length;
+
     function assert(expr, msg) {
       if (!expr) {
         throw new Error(msg);
@@ -92,22 +98,19 @@ export class BPTree {
       const node = currentNode;
       const keysLength = node.k.length;
 
-      assert(keysLength < self.order, 'Overflowed node');
+      if (keysLength > self.maxKeys) {
+      }
+      assert(keysLength <= self.maxKeys, 'Overflowed node');
 
       for (let i = 0, kl = keysLength - 1; i < kl; i++) {
         assert(self.cmpFn(node.k[i], node.k[i + 1]) === -1, 'Disordered or duplicate key');
       }
 
       if (lo.length !== 0 && self.cmpFn(lo[0], node.k[0]) > 0) {
-        log('lo', lo, '<=', node.k[0]);
-        log(node);
       }
       if (hi.length !== 0 && self.cmpFn(node.k[keysLength - 1], hi[0]) > -1) {
         if (node.t === 'branch' && node.v.length < self.minKeys) {
-          log('Underpop branch!');
         }
-        log('hi', node.k[keysLength - 1], '<', hi);
-        log(node);
       }
       assert(lo.length === 0 || self.cmpFn(lo[0], node.k[0]) < 1, 'lo error');
       assert(hi.length === 0 || self.cmpFn(node.k[keysLength - 1], hi[0]) === -1, 'hi error');
@@ -123,8 +126,6 @@ export class BPTree {
         }
 
         if (keysLength !== kidsLength - 1) {
-          log('node has keysLength', keysLength, 'instead of', kidsLength - 1);
-          log(node.k, 'should be', node.v.slice(1).map((o) => o.v[0].k[0]));
         }
         assert(keysLength === kidsLength - 1, 'keys and kids don\'t correspond');
 
@@ -145,6 +146,10 @@ export class BPTree {
       }
       return true;
     }
+
+    if (leafCount !== this.numKeys) {
+    }
+    assert(leafCount === this.numKeys, 'leaf count does not match');
 
     return checking(this, nodeToCheck || this.tree, 0, [], []);
   }
@@ -186,16 +191,16 @@ export class BPTree {
     return null;
   }
 
-  reallyStore(newKey, value) {
+  reallyStore(key, value) {
     const path = [];
     let node = this.tree;
 
-    // Find the leaf node for newKey, and the path down to it.
+    // Find the leaf node for key, and the path down to it.
     while (node.t === 'branch') {
       let i = 0;
       let found = false;
       for (let nkl = node.k.length; i < nkl; i++) {
-        if (newKey < node.k[i]) {
+        if (this.cmpFn(key, node.k[i]) === -1) {
           found = true;
           break;
         }
@@ -207,16 +212,16 @@ export class BPTree {
       node = node.v[i];
     }
 
-    // Find the index for newKey in the leaf node.
+    // Find the index for key in the leaf node.
     let i = 0;
     let found = false;
     const nkl = node.k.length;
     for (; i < nkl; i++) {
-      if (this.cmpFn(newKey, node.k[i]) === 0) {
-        // newKey isn't actually new, so the structure goes unchanged.
+      if (this.cmpFn(key, node.k[i]) === 0) {
+        // key isn't actually new, so the structure goes unchanged.
         node.v[i] = value;
         return;
-      } else if (this.cmpFn(newKey, node.k[i]) === -1) {
+      } else if (this.cmpFn(key, node.k[i]) === -1) {
         found = true;
         break;
       }
@@ -226,7 +231,7 @@ export class BPTree {
     }
 
     // We'll have to insert it in the leaf at i. If there's room, just do it:
-    node.k.splice(i, 0, newKey);
+    node.k.splice(i, 0, key);
     node.v.splice(i, 0, value);
     this.numKeys += 1;
 
@@ -258,8 +263,8 @@ export class BPTree {
     this.tree = { t: 'branch', k: [tween], v: [left, right], n: null };
   }
 
-  store(newKey, value) {
-    this.reallyStore(newKey, value);
+  store(key, value) {
+    this.reallyStore(key, value);
     this.check();
   }
 
@@ -294,6 +299,9 @@ export class BPTree {
   }
 
   pathToChildPath(path) {
+    if (!path.length) {
+      return path;
+    }
     return path.map((p) => ['v', p]).reduce((a, b) => a.concat(b));
   }
 
@@ -309,54 +317,33 @@ export class BPTree {
       fetched.node.k.splice(index, 1);
       fetched.node.v.splice(index, 1);
     }
-    this.set(fetched.path, fetched.node);
+    this.set(this.pathToChildPath(fetched.path), fetched.node);
 
     this.numKeys--;
     return { leaf: fetched.node, path: fetched.path };
   }
 
-  c(path, maxDepth) {
-    const pathLength = path.length;
-    switch (maxDepth) {
-    case 1:
-      switch (pathLength) {
-      case 0:
-        return (o) => o.v[0].k[0];
-      case 1:
-        return (o) => o.k[0];
-      default:
-        throw new Error('wat');
-      }
-      break;
-    case 2:
-      switch (pathLength) {
-      case 0:
-        return (o) => o.v[0].v[0].k[0];
-      case 1:
-        return (o) => o.v[0].k[0];
-      case 2:
-        return (o) => o.k[0];
-      default:
-        throw new Error('wat');
-      }
-      break;
-    case 3:
-      switch (pathLength) {
-      case 0:
-        return (o) => o.v[0].v[0].v[0].k[0];
-      case 1:
-        return (o) => o.v[0].v[0].k[0];
-      case 2:
-        return (o) => o.v[0].k[0];
-      case 3:
-        return (o) => o.k[0];
-      default:
-        throw new Error('wat');
-      }
-      break;
-    default:
-      throw new Error('wat');
-    }
+  c(pathLength, maxDepth) {
+    const fn = [
+      /*  0 */ (o) => o.k[0],
+      /*  1 */ (o) => o.v[0].k[0],
+      /*  2 */ (o) => o.v[0].v[0].k[0],
+      /*  3 */ (o) => o.v[0].v[0].v[0].k[0],
+      /*  4 */ (o) => o.v[0].v[0].v[0].v[0].k[0],
+      /*  5 */ (o) => o.v[0].v[0].v[0].v[0].v[0].k[0],
+      /*  6 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].k[0],
+      /*  7 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
+      /*  8 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
+      /*  9 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
+      /* 10 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
+      /* 11 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
+      /* 12 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
+      /* 13 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
+      /* 14 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
+      /* 15 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
+      /* 16 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
+    ];
+    return fn[maxDepth - pathLength];
   }
 
   fixKeys() {
@@ -378,9 +365,12 @@ export class BPTree {
 
     result.forEach((path) => {
       const sub = this.get(path);
-      sub.k = sub.v.slice(1).map(this.c(path, result[0].length));
+      sub.k = sub.v.slice(1).map(this.c(path.length, result[0].length));
     });
-    this.tree.k = this.tree.v.slice(1).map(this.c([], result[0].length));
+
+    if (this.tree.t !== 'leaf') {
+      this.tree.k = this.tree.v.slice(1).map(this.c(0, result.length ? result[0].length : 0));
+    }
 
     return result;
   }
@@ -406,7 +396,7 @@ export class BPTree {
     }
 
     // if leaf is at least half full, terminate
-    if (leaf.k.length >= this.minKeys) {
+    if (leaf.v.length >= this.minKeys) {
       return true;
     }
 
@@ -419,7 +409,6 @@ export class BPTree {
     if (leafIndex < parent.v.length - 1) {
       const rightSibling = parent.v[leafIndex + 1];
       if (rightSibling && rightSibling.k.length > this.minKeys) {
-        log('borrow from right');
         // can borrow from right because it is more than half full
         canBorrowRight = true;
         const keyToBorrow = rightSibling.k.shift();
@@ -444,11 +433,12 @@ export class BPTree {
     if (leafIndex > 0) {
       const leftSibling = parent.v[leafIndex - 1];
       if (leftSibling && leftSibling.k.length > this.minKeys) {
-        log('borrow from left');
         // can borrow from left because it is more than half full
         canBorrowLeft = true;
-        leftSibling.k.pop();
-        leftSibling.v.pop();
+        const keyToBorrow = leftSibling.k.pop();
+        const valBorrowed = leftSibling.v.pop();
+        leaf.k.unshift(keyToBorrow);
+        leaf.v.unshift(valBorrowed);
         const parentKeys = [];
         for (let i = parent.v.length - 2; i >= 0; i--) {
           const k = parent.v[i + 1].k[0];
@@ -463,9 +453,10 @@ export class BPTree {
 
     if (!canBorrowRight && !canBorrowLeft) {
       let again = true;
+      let lastIndex;
       while (again) {
-        log('d=' + (path.length), 'entering loop', path);
         parent = this.get(path);
+        lastIndex = index;
         if (path.length) {
           index = path.pop();
         } else {
@@ -473,21 +464,61 @@ export class BPTree {
           again = false;
         }
 
-        if (parent.v[index - 1] && parent.v[index - 1].v.length + parent.v[index].v.length <= this.maxKeys) {
-          log('merge left, will have');
-          // merging with left, deleting sibling
-          // node becomes (sibling merged with node)
-          parent.v[index] = this._mergeLeft(parent.v[index - 1], parent.v[index]);
-          parent.v.splice(index, 1); // delete now merged sibling
-        } else if (parent.v[index + 1] && parent.v[index].v.length + parent.v[index + 1].v.length <= this.maxKeys) {
-          log('merge right, will have');
-          // merging with right, deleting sibling
-          // node becomes (node merged with sibling)
-          parent.v[index] = this._mergeRight(parent.v[index + 1], parent.v[index]);
-          parent.v.splice(index + 1, 1); // delete now merged sibling
+        const mergeNeeded = parent.t !== 'leaf' && parent.v[lastIndex].k.length < this.minKeys;
+
+        if (mergeNeeded) {
+          // if (parent.v[lastIndex + 1]) log('with right branch', parent.v[lastIndex + 1]);
+          const leftExists = parent.v[lastIndex - 1];
+          let leftSum = leftExists && parent.v[lastIndex - 1].k.length + parent.v[lastIndex].k.length;
+          leftSum += parent.v[lastIndex].t === 'leaf' ? 0 : 1;
+          const roomOnLeft = leftExists && leftSum && leftSum <= this.maxKeys;
+
+          const rightExists = parent.v[lastIndex + 1];
+          let rightSum = rightExists && parent.v[lastIndex + 1].k.length + parent.v[lastIndex].k.length;
+          rightSum += parent.v[lastIndex].t === 'leaf' ? 0 : 1;
+          const roomOnRight = rightExists && rightSum && rightSum <= this.maxKeys;
+
+          let splitIndex = false;
+
+          if ((leftExists && roomOnLeft) || (leftExists && !roomOnRight)) {
+            if (!roomOnLeft) {
+              if (!roomOnRight) {
+              }
+              splitIndex = lastIndex - 1;
+            }
+            // merging with left, deleting sibling
+            // node becomes (sibling merged with node)
+            parent.v[lastIndex] = this._mergeLeft(parent.v[lastIndex - 1], parent.v[lastIndex]);
+            parent.v.splice(lastIndex, 1); // delete now merged sibling
+          } else if (rightExists) {
+            if (!roomOnRight) {
+              splitIndex = lastIndex;
+            } else {
+            }
+            // merging with right, deleting sibling
+            // node becomes (node merged with sibling)
+            parent.v[lastIndex] = this._mergeRight(parent.v[lastIndex + 1], parent.v[lastIndex]);
+            parent.v.splice(lastIndex + 1, 1); // delete now merged sibling
+          }
+          if (splitIndex !== false) {
+            const branchToSplit = parent.v[splitIndex];
+            const mid = this.minKeys;
+            const leftContent = branchToSplit.v.slice(0, mid);
+            const rightContent = branchToSplit.v.slice(mid);
+            const childType = parent.t;
+            const left = {t: childType, k: leftContent.slice(1).map((o) => o.k[0]), v: leftContent};
+            const right = {t: childType, k: rightContent.slice(1).map((o) => o.k[0]), v: rightContent};
+            // parent.k = [right.v[0].k[0]];
+            parent.v.splice.apply(parent.v, [splitIndex, 1].concat([left, right]));
+            // parent.v[splitIndex].v = [left, right];
+            if (this.repr(true).length !== this.numKeys) {
+              throw new Error('now');
+            }
+            // throw new Error('hehe');
+          }
         }
 
-        if (this.tree.v.length < 2) {
+        if (this.tree.t !== 'leaf' && this.tree.v.length < 2) {
           // underpopulated root
           if (this.tree.v[index].v.length > this.maxKeys) {
             // need to split
