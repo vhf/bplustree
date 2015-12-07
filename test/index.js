@@ -46,8 +46,11 @@ describe('BPTree', () => {
           n: null };
     tree.store(4, 'd');
     assert.deepEqual(tree.tree, e);
-    tree = setup();
-    tree.check();
+  });
+
+  it('should update values', () => {
+    tree.store(4, 'zz');
+    assert.equal(tree.fetch(4), 'zz');
   });
 
   it('should fetch', () => {
