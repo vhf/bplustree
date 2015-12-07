@@ -89,7 +89,7 @@ describe('BPTree', () => {
   });
 
   it('should remove val', function testWithTimeout() {
-    this.timeout(5*60000);
+    this.timeout(60000);
     const vals = [7, 3, 11, 4, 1, 10, 8, 6, 2, 5, 12];
     for (let i = 0; i < vals.length; i++) {
       tree.remove(vals[i]);
@@ -102,7 +102,6 @@ describe('BPTree', () => {
     let keys = [];
     const alpha = 'abcdefghijklmnopqrstuvwxyz';
     tree = new BPTree(order);
-    log(N, 'elements with order', tree.order);
     for (let i = 0; i < N; i++) {
       let k;
       const v = alpha[r(alpha.length) - 1] + alpha[r(alpha.length) - 1] + alpha[r(alpha.length) - 1];
