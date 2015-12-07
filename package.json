@@ -3,11 +3,12 @@
   "version": "0.0.1",
   "scripts": {
     "test": "mocha --compilers js:babel-core/register --check-leaks test/index.js",
-    "cov": "istanbul cover _mocha -- -- test/index.js",
+    "cov": "istanbul cover _mocha -- --compilers js:babel-core/register lib/bpt.js test/index.js",
     "tc": "npm run test && npm run cov"
   },
   "devDependencies": {
     "babel-cli": "^6.2.0",
-    "babel-core": "^6.2.1"
+    "babel-core": "^6.2.1",
+    "babel-istanbul": "^0.5.9"
   }
 }

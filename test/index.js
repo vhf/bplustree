@@ -1,11 +1,7 @@
 /* eslint-env node, mocha */
 import {BPTree} from '../lib/bpt';
+import {log} from '../utils/log';
 const assert = require('assert');
-const util = require('util');
-
-const log = (obj) => {
-  console.log(util.inspect(obj, false, null));
-};
 
 const setup = () => {
   const tree = new BPTree(4);
@@ -92,14 +88,35 @@ describe('BPTree', () => {
     assert.deepEqual(tree.repr(), { '1': 'z', '2': 'b', '3': 'c', '4': 'd', '5': 'e', '6': 'f', '7': 'g', '8': 'h', '10': 'm', '11': 'n', '12': 'p' });
   });
 
-  it('should remove val', () => {
-    for (let i = 1; i < 9; i++) {
-      log(9 - i);
-      tree.remove(9 - i);
+  it('should remove val', function testWithTimeout() {
+    this.timeout(5*60000);
+    const vals = [7, 3, 11, 4, 1, 10, 8, 6, 2, 5, 12];
+    for (let i = 0; i < vals.length; i++) {
+      tree.remove(vals[i]);
     }
-    // const vals = [7, 3, 11, 4, 1, 10, 8, 6, 2, 5, 12];
-    // for (let i = 0; i < vals.length; i++) {
-    //   tree.remove(vals[i]);
-    // }
+    assert.deepEqual(tree.tree, { t: 'leaf', k: [], v: [], n: null });
+
+    const r = (n) => Math.floor(Math.random() * n) + 1;
+    const N = r(1000);
+    const order = Math.floor(r(Math.floor(r(150) / 3)) * 2) + 2;
+    let keys = [];
+    const alpha = 'abcdefghijklmnopqrstuvwxyz';
+    tree = new BPTree(order);
+    log(N, 'elements with order', tree.order);
+    for (let i = 0; i < N; i++) {
+      let k;
+      const v = alpha[r(alpha.length) - 1] + alpha[r(alpha.length) - 1] + alpha[r(alpha.length) - 1];
+      do {
+        k = r(N);
+      } while (keys.indexOf(k) > -1);
+      keys.push(k);
+      tree.store(k, v);
+    }
+    keys = keys.reverse();
+    for (let i = 0; i < N; i++) {
+      const ck = keys[i];
+      tree.remove(ck);
+    }
+    assert.deepEqual(tree.tree, { t: 'leaf', k: [], v: [], n: null });
   });
 });
