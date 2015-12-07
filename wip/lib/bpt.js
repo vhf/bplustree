@@ -309,27 +309,36 @@ export class BPTree {
     return { leaf: fetched.node, path: fetched.path };
   }
 
-  _getFirstKeyFnForDepth(depth) {
+  _genGetKeyFn(driller, depth) {
+    console.log('PERFS');
+    if (depth === 0) {
+      return (o) => driller(o).k[0];
+    }
+    return this._genGetKeyFn((o) => driller(o).v[0], depth - 1);
+  }
+
+  _getFirstKeyFn(depth) {
     const fn = [
-      /*  0 */ (o) => o.k[0],
-      /*  1 */ (o) => o.v[0].k[0],
-      /*  2 */ (o) => o.v[0].v[0].k[0],
-      /*  3 */ (o) => o.v[0].v[0].v[0].k[0],
-      /*  4 */ (o) => o.v[0].v[0].v[0].v[0].k[0],
-      /*  5 */ (o) => o.v[0].v[0].v[0].v[0].v[0].k[0],
-      /*  6 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].k[0],
-      /*  7 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
-      /*  8 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
-      /*  9 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
-      /* 10 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
-      /* 11 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
-      /* 12 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
-      /* 13 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
-      /* 14 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
-      /* 15 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
-      /* 16 */ (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].k[0],
+      (o) => o,
+      (o) => o.v[0],
+      (o) => o.v[0].v[0],
+      (o) => o.v[0].v[0].v[0],
+      (o) => o.v[0].v[0].v[0].v[0],
+      (o) => o.v[0].v[0].v[0].v[0].v[0],
+      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0],
+      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
     ];
-    return fn[depth];
+    const length = fn.length;
+    return (depth < length - 1 && ((o) => fn[depth](o).k[0])) || this._genGetKeyFn(fn[length - 1], depth - length + 1);
   }
 
   _fixKeys() {
@@ -351,11 +360,11 @@ export class BPTree {
 
     result.forEach((path) => {
       const sub = this._get(path);
-      sub.k = sub.v.slice(1).map(this._getFirstKeyFnForDepth(result[0].length - path.length));
+      sub.k = sub.v.slice(1).map(this._getFirstKeyFn(result[0].length - path.length));
     });
 
     if (this.tree.t !== 'leaf') {
-      this.tree.k = this.tree.v.slice(1).map(this._getFirstKeyFnForDepth(result.length ? result[0].length : 0));
+      this.tree.k = this.tree.v.slice(1).map(this._getFirstKeyFn(result.length ? result[0].length : 0));
     }
 
     return result;
