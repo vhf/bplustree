@@ -1,10 +1,9 @@
 /* eslint-env node, mocha */
-import {BPTree} from '../lib/bplustree';
-import {log} from '../utils/log';
+const BPlusTree = require('../dist/bplustree');
 const assert = require('assert');
 
 const setup = (n) => {
-  const tree = new BPTree(4);
+  const tree = new BPlusTree(4);
   const data = [[1, 'z'], [2, 'b'], [3, 'c'], [4, 'd'], [5, 'e'], [6, 'f'], [7, 'g'], [8, 'h'], [10, 'm'], [11, 'n'], [12, 'p']];
   for (let i = 0; i < ((n || n > data.length ? data.length : n) || data.length); i++) {
     tree.store(data[i][0], data[i][1]);
@@ -12,16 +11,16 @@ const setup = (n) => {
   return tree;
 };
 
-describe('BPTree', () => {
+describe('BPlusTree', () => {
   it('should be created', () => {
-    const tree = new BPTree();
+    const tree = new BPlusTree();
     assert.equal(tree.order, 4);
     assert.equal(tree.tree.k.length, 0);
     assert.equal(tree.tree.v.length, 0);
   });
 
   it('should insert and rebalance', () => {
-    const tree = new BPTree();
+    const tree = new BPlusTree();
     let e = {};
     e = { t: 'leaf', k: [ 1 ], v: [ 'a' ], n: null };
     tree.store(1, 'a');
@@ -66,7 +65,7 @@ describe('BPTree', () => {
   });
 
   it('should range', () => {
-    let tree = new BPTree();
+    let tree = new BPlusTree();
     tree.store(4, 'a');
     // assert.deepEqual(tree.fetchRange(1, 5), ['a']);
     assert.deepEqual(tree.fetchRange(4, 4), ['a']);
@@ -117,7 +116,7 @@ describe('BPTree', () => {
     const order = Math.floor(r(Math.floor(r(150) / 3)) * 2) + 2;
     let keys = [];
     const alpha = 'abcdefghijklmnopqrstuvwxyz';
-    tree = new BPTree(order);
+    tree = new BPlusTree(order);
     for (let i = 0; i < N; i++) {
       let k;
       const v = alpha[r(alpha.length) - 1] + alpha[r(alpha.length) - 1] + alpha[r(alpha.length) - 1];
