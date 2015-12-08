@@ -19,15 +19,16 @@ const setup = () => {
   return tree;
 };
 
-let tree = new BPTree(4);
-
 describe('BPTree', () => {
-  it('should be created empty', () => {
+  it('should be created', () => {
+    const tree = new BPTree();
+    assert.equal(tree.order, 4);
     assert.equal(tree.tree.k.length, 0);
     assert.equal(tree.tree.v.length, 0);
   });
 
   it('should insert and rebalance', () => {
+    const tree = new BPTree();
     let e = {};
     e = { t: 'leaf', k: [ 1 ], v: [ 'a' ], n: null };
     tree.store(1, 'a');
@@ -49,12 +50,13 @@ describe('BPTree', () => {
   });
 
   it('should update values', () => {
+    const tree = setup();
     tree.store(4, 'zz');
     assert.equal(tree.fetch(4), 'zz');
   });
 
   it('should fetch', () => {
-    tree = setup();
+    const tree = setup();
     assert.equal(tree.fetch(1), 'z');
     assert.equal(tree.fetch(3), 'c');
     assert.equal(tree.fetch(4), 'd');
@@ -70,6 +72,12 @@ describe('BPTree', () => {
   });
 
   it('should range', () => {
+    let tree = new BPTree();
+    tree.store(4, 'a');
+    // assert.deepEqual(tree.fetchRange(1, 5), ['a']);
+    assert.deepEqual(tree.fetchRange(4, 4), ['a']);
+
+    tree = setup();
     assert.deepEqual(tree.fetchRange(2, 2), ['b']);
     assert.deepEqual(tree.fetchRange(4, 4), ['d']);
     assert.deepEqual(tree.fetchRange(4, -4), []);
@@ -80,19 +88,24 @@ describe('BPTree', () => {
     assert.deepEqual(tree.fetchRange(1, 3), ['z', 'b', 'c']);
     assert.deepEqual(tree.fetchRange(2, 4), ['b', 'c', 'd']);
     assert.deepEqual(tree.fetchRange(1, 4), ['z', 'b', 'c', 'd']);
+    assert.deepEqual(tree.fetchRange(1, 5), ['z', 'b', 'c', 'd', 'e']);
+    assert.deepEqual(tree.fetchRange(2, 5), ['b', 'c', 'd', 'e']);
     assert.deepEqual(tree.fetchRange(1, 4, true), ['z', 'b', 'c', 'd'].reverse());
   });
 
   it('should check', () => {
+    const tree = setup();
     assert(tree.check());
   });
 
   it('should repr', () => {
+    const tree = setup();
     assert.deepEqual(tree.repr(), { '1': 'z', '2': 'b', '3': 'c', '4': 'd', '5': 'e', '6': 'f', '7': 'g', '8': 'h', '10': 'm', '11': 'n', '12': 'p' });
   });
 
   it('should remove val', function testWithTimeout() {
     this.timeout(60000);
+    let tree = setup();
     const vals = [7, 3, 11, 4, 1, 10, 8, 6, 2, 5, 12];
     for (let i = 0; i < vals.length; i++) {
       tree.remove(vals[i]);
