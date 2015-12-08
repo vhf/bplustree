@@ -176,7 +176,7 @@ async.series([
   },
 
   (done) => {
-    log('\n\nTesting getAll({sortDescending: false})\n'.yellow);
+    log('\n\nTesting getAll()\n'.yellow);
 
     const suite = new Benchmark.Suite();
     const results = [];
@@ -208,55 +208,6 @@ async.series([
       name: 'array',
       fn: () => {
         _.sortByOrder(xs, ['key'], ['asc']);
-      },
-    });
-
-    suite.on('error', (event) => {
-      done(event.target.error);
-    });
-
-    suite.on('complete', () => {
-      suite.forEach((obj) => { results.push(obj.hz); });
-      log(compileResult(results));
-      done();
-    });
-
-    suite.run();
-  },
-
-  (done) => {
-    log('\n\nTesting getAll({sortDescending: true})\n'.yellow);
-
-    const suite = new Benchmark.Suite();
-    const results = [];
-    const tree = new BPlusIndex({debug: false, branchingFactor: bf});
-    const tree2 = new BPlusTree(bf);
-    const xs = [];
-
-    for (const rec of db) {
-      tree.inject(rec.key, rec.value);
-      tree2.store(rec.key, rec.value);
-      xs.push({key: rec.key, val: rec.value});
-    }
-
-    suite.add({
-      name: 'bplus-index',
-      fn: () => {
-        tree.getAll({sortDescending: true});
-      },
-    });
-
-    suite.add({
-      name: 'bplustree',
-      fn: () => {
-        tree2.repr(false, true, true);
-      },
-    });
-
-    suite.add({
-      name: 'array',
-      fn: () => {
-        _.sortByOrder(xs, ['key'], ['desc']);
       },
     });
 
