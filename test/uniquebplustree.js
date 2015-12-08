@@ -131,7 +131,7 @@ describe('Unique BPlusTree', () => {
     keys = keys.reverse();
     for (let i = 0; i < N; i++) {
       const ck = keys[i];
-      tree.remove(ck);
+      assert.equal(tree.fetch(ck), tree.remove(ck));
     }
     assert.deepEqual(tree.tree, { t: 'leaf', k: [], v: [], n: null });
   });
