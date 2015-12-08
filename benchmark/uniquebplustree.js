@@ -41,8 +41,12 @@ const bf = 50;
 log('Creating database of ' + dbSize + ' records');
 console.time('Done!');
 for (let i = 0; i < dbSize; i++) {
+  // const rec = {
+  //   age: faker.random.number({max: 90}),
+  //   name: faker.name.findName(),
+  // };
   const rec = {
-    key: faker.random.number({max: 90}),
+    key: i + 1,
     value: faker.name.findName(),
   };
   db.push(rec);
