@@ -3,19 +3,12 @@ import {BPTree} from '../lib/bpt';
 import {log} from '../utils/log';
 const assert = require('assert');
 
-const setup = () => {
+const setup = (n) => {
   const tree = new BPTree(4);
-  tree.store(1, 'z');
-  tree.store(2, 'b');
-  tree.store(3, 'c');
-  tree.store(4, 'd');
-  tree.store(5, 'e');
-  tree.store(6, 'f');
-  tree.store(7, 'g');
-  tree.store(8, 'h');
-  tree.store(10, 'm');
-  tree.store(11, 'n');
-  tree.store(12, 'p');
+  const data = [[1, 'z'], [2, 'b'], [3, 'c'], [4, 'd'], [5, 'e'], [6, 'f'], [7, 'g'], [8, 'h'], [10, 'm'], [11, 'n'], [12, 'p']];
+  for (let i = 0; i < ((n || n > data.length ? data.length : n) || data.length); i++) {
+    tree.store(data[i][0], data[i][1]);
+  }
   return tree;
 };
 
@@ -108,6 +101,11 @@ describe('BPTree', () => {
     this.timeout(60000);
     let tree = setup();
     assert.equal(tree.remove(100), false);
+    tree = setup(3);
+    assert.equal(tree.remove(2), 'b');
+    tree = setup(4);
+    assert.equal(tree.remove(4), 'd');
+    tree = setup();
     const vals = [7, 3, 11, 4, 1, 10, 8, 6, 2, 5, 12];
     for (let i = 0; i < vals.length; i++) {
       tree.remove(vals[i]);
