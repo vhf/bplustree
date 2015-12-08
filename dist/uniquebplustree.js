@@ -15,7 +15,6 @@ var BPlusTree = (function () {
     this.minKeys = Math.ceil(this.order / 2);
     this.maxKeys = this.order - 1;
     this.numKeys = 0;
-    this.numVals = 0;
     this.debug = debug || false;
 
     this.cmpFn = cmpFn || function (a, b) {
@@ -68,20 +67,14 @@ var BPlusTree = (function () {
 
       while (leaf.k[index] <= upperBound) {
         if (this.cmpFn(leaf.k[index], upperBound) === 0) {
-          result = result.concat(leaf.v[index]).reduce(function (a, b) {
-            return a.concat(b);
-          }, []);
+          result.push(leaf.v[index]);
           break;
         }
         if (this.cmpFn(leaf.k[leaf.k.length - 1], upperBound) === 0) {
-          result = result.concat(leaf.v).reduce(function (a, b) {
-            return a.concat(b);
-          }, []);
+          result = result.concat(leaf.v);
           break;
         } else if (this.cmpFn(leaf.k[leaf.k.length - 1], upperBound) === -1) {
-          result = result.concat(leaf.v.slice(index)).reduce(function (a, b) {
-            return a.concat(b);
-          }, []);
+          result = result.concat(leaf.v.slice(index));
           leaf = this.fetch(leaf.n, true);
           index = 0;
         } else {
@@ -188,7 +181,7 @@ var BPlusTree = (function () {
       for (var j = 0, kl = node.k.length; j < kl; j++) {
         if (this.cmpFn(needleKey, node.k[j]) === 0) {
           if (location) {
-            return { val: node.v[j], node: node, path: path };
+            return { val: node.v[j], node: getLeaf ? node : node.v[j], path: path };
           }
           if (getLeaf) {
             return node;
@@ -230,7 +223,7 @@ var BPlusTree = (function () {
       for (; i < nkl; i++) {
         if (this.cmpFn(key, node.k[i]) === 0) {
           // key isn't actually new, so the structure goes unchanged.
-          node.v[i].push(value);
+          node.v[i] = value;
           return;
         } else if (this.cmpFn(key, node.k[i]) === -1) {
           found = true;
@@ -243,9 +236,8 @@ var BPlusTree = (function () {
 
       // We'll have to insert it in the leaf at i. If there's room, just do it:
       node.k.splice(i, 0, key);
-      node.v.splice(i, 0, [value]);
+      node.v.splice(i, 0, value);
       this.numKeys += 1;
-      this.numVals += 1;
 
       if (node.k.length < this.order) {
         return;
@@ -417,53 +409,28 @@ var BPlusTree = (function () {
     }
   }, {
     key: '_removeKey',
-    value: function _removeKey(key, val) {
-      var fetched = this.fetch(key, null, null, true);
+    value: function _removeKey(key) {
+      var fetched = this.fetch(key, true, null, true);
 
       if (!fetched) {
         return false;
       }
-      var keyIndex = fetched.node.k.indexOf(key);
-      var valIndex = fetched.node.v[keyIndex].indexOf(val);
-      var valCount = fetched.node.v[keyIndex].length;
-      var removed = undefined;
 
-      // key does not contain val
-      if (val !== undefined && valIndex === -1) {
-        return false;
+      var index = fetched.node.k.indexOf(key);
+      if (index !== -1) {
+        fetched.node.k.splice(index, 1);
+        fetched.node.v.splice(index, 1);
       }
+      this._set(this._pathToChildPath(fetched.path), fetched.node);
 
-      // we only have one val, remove it together with its key
-      if (valCount === 1 && keyIndex !== -1) {
-        fetched.node.k.splice(keyIndex, 1);
-        removed = fetched.node.v[keyIndex][0];
-        fetched.node.v.splice(keyIndex, 1);
-        this.numKeys--;
-      } else if (val !== undefined) {
-        // key does not contain said val
-        if (valIndex === -1) {
-          return false;
-        }
-        // key contains val, but we have other vals, only remove this val
-        removed = fetched.node.v[keyIndex][valIndex];
-        fetched.node.v[keyIndex].splice(valIndex, 1);
-      } else {
-        // key has several vals, we don't remove anything
-        if (valCount > 1) {
-          return false;
-        }
-      }
-
-      // we lost one val
-      this.numvals--;
-      return { val: removed, leaf: fetched.node, path: fetched.path };
+      this.numKeys--;
+      return { val: fetched.val, leaf: fetched.node, path: fetched.path };
     }
   }, {
     key: '_doRemove',
-    value: function _doRemove(key, val) {
+    value: function _doRemove(key) {
       // get leaf for key, remove key from leaf
-      var numKeys = this.numKeys;
-      var removed = this._removeKey(key, val);
+      var removed = this._removeKey(key);
       if (!removed) {
         return false;
       }
@@ -475,14 +442,13 @@ var BPlusTree = (function () {
       var parent = this._get(parentPath);
       var index = parent.k.indexOf(key);
 
-      // we lost a key, need to update parent keys !
-      if (numKeys !== this.numKeys && index !== -1) {
+      if (index !== -1) {
         this._set(this._pathToChildPath(parentPath).concat(['k', index]), leaf.k[0]);
       }
 
       // if leaf is at least half full, terminate
       if (leaf.v.length >= this.minKeys) {
-        return removed.val;
+        return true;
       }
 
       var leafIndex = path[path.length - 1];
@@ -629,8 +595,8 @@ var BPlusTree = (function () {
     }
   }, {
     key: 'remove',
-    value: function remove(key, val) {
-      var removed = this._doRemove(key, val);
+    value: function remove(key) {
+      var removed = this._doRemove(key);
       if (this.debug) {
         this.check();
       }

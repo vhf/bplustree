@@ -2,10 +2,10 @@
   "name": "bplustree",
   "version": "0.1.0",
   "scripts": {
-    "test": "mocha --compilers js:babel-core/register --check-leaks test/index.js",
-    "coverage": "babel-node node_modules/isparta/bin/isparta cover ./node_modules/mocha/bin/_mocha -- test/index.js",
+    "test": "mocha --compilers js:babel-core/register --check-leaks test/bplustree.js test/uniquebplustree.js",
+    "coverage": "babel-node node_modules/isparta/bin/isparta cover ./node_modules/mocha/bin/_mocha -- test/bplustree.js test/uniquebplustree.js",
     "build": "babel lib -d dist",
-    "benchmark": "babel-node benchmark/index.js"
+    "benchmark": "babel-node benchmark/bplustree.js"
   },
   "devDependencies": {
     "async": "^1.5.0",
