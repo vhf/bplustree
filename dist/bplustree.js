@@ -2,20 +2,20 @@
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var BPTree = exports.BPTree = (function () {
-  function BPTree(order, cmpFn) {
-    _classCallCheck(this, BPTree);
+var BPlusTree = (function () {
+  function BPlusTree(order, cmpFn, debug) {
+    _classCallCheck(this, BPlusTree);
 
     this.order = order || 4;
+    if (this.order % 2 !== 0 || this.order < 4) {
+      throw new Error('order must be even and greater than 4');
+    }
     this.minKeys = Math.ceil(this.order / 2);
     this.maxKeys = this.order - 1;
     this.numKeys = 0;
+    this.debug = debug || false;
 
     this.cmpFn = cmpFn || function (a, b) {
       return a < b ? -1 : a > b ? 1 : 0; // eslint-disable-line
@@ -24,10 +24,10 @@ var BPTree = exports.BPTree = (function () {
     this.tree = { t: 'leaf', k: [], v: [], n: null };
   }
 
-  _createClass(BPTree, [{
+  _createClass(BPlusTree, [{
     key: 'repr',
-    value: function repr(keys) {
-      var result = keys ? [] : {};
+    value: function repr(keys, values, sortDescending) {
+      var result = keys || values ? [] : {};
       function walk(node) {
         if (node.t === 'branch') {
           var kids = node.v;
@@ -36,7 +36,9 @@ var BPTree = exports.BPTree = (function () {
           }
         } else if (node.t === 'leaf') {
           for (var i = 0, nkl = node.k.length; i < nkl; i++) {
-            if (keys) {
+            if (values) {
+              result.push(node.v[i]);
+            } else if (keys) {
               result.push(node.k[i]);
             } else {
               result[node.k[i]] = node.v[i];
@@ -45,6 +47,9 @@ var BPTree = exports.BPTree = (function () {
         }
       }
       walk(this.tree);
+      if (sortDescending) {
+        return result.reverse();
+      }
       return result;
     }
   }, {
@@ -265,7 +270,9 @@ var BPTree = exports.BPTree = (function () {
     key: 'store',
     value: function store(key, value) {
       this._doStore(key, value);
-      this.check();
+      if (this.debug) {
+        this.check();
+      }
     }
   }, {
     key: '_set',
@@ -590,7 +597,9 @@ var BPTree = exports.BPTree = (function () {
     key: 'remove',
     value: function remove(key) {
       var removed = this._doRemove(key);
-      this.check();
+      if (this.debug) {
+        this.check();
+      }
       return removed;
     }
   }, {
@@ -613,5 +622,7 @@ var BPTree = exports.BPTree = (function () {
     }
   }]);
 
-  return BPTree;
+  return BPlusTree;
 })();
+
+module.exports = BPlusTree;
