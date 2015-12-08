@@ -107,6 +107,7 @@ describe('BPTree', () => {
   it('should remove val', function testWithTimeout() {
     this.timeout(60000);
     let tree = setup();
+    assert.equal(tree.remove(100), false);
     const vals = [7, 3, 11, 4, 1, 10, 8, 6, 2, 5, 12];
     for (let i = 0; i < vals.length; i++) {
       tree.remove(vals[i]);
