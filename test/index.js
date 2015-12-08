@@ -1,5 +1,5 @@
 /* eslint-env node, mocha */
-import {BPTree} from '../lib/bpt';
+import {BPTree} from '../lib/bplustree';
 import {log} from '../utils/log';
 const assert = require('assert');
 
