@@ -99,15 +99,21 @@ var BPlusTree = (function () {
       return result;
     }
   }, {
+    key: 'depth',
+    value: function depth(node) {
+      var tree = node || this.tree;
+      var d = 0;
+      while (tree.t === 'branch') {
+        tree = tree.v[0];
+        d += 1;
+      }
+      return d;
+    }
+  }, {
     key: 'check',
     value: function check(nodeToCheck) {
       var tree = nodeToCheck || this.tree;
-
-      var depth = 0;
-      while (tree.t === 'branch') {
-        tree = tree.v[0];
-        depth += 1;
-      }
+      var depth = this.depth(tree);
 
       function assert(expr, msg) {
         if (!expr) {
@@ -160,7 +166,7 @@ var BPlusTree = (function () {
 
       assert(this.repr(true).length === this.numKeys, 'leaf count does not match');
 
-      return checking(this, nodeToCheck || this.tree, 0, [], []);
+      return checking(this, tree, 0, [], []);
     }
   }, {
     key: 'fetch',
@@ -283,26 +289,6 @@ var BPlusTree = (function () {
       }
     }
   }, {
-    key: '_set',
-    value: function _set(path, value) {
-      var index = -1;
-      var length = path.length;
-      var lastIndex = length - 1;
-      var nested = this.tree;
-
-      while (nested && ++index < length) {
-        var currentKey = path[index];
-        var newValue = value;
-        if (index !== lastIndex) {
-          newValue = nested[currentKey];
-        }
-        if (newValue) {
-          nested[currentKey] = newValue;
-        }
-        nested = nested[currentKey];
-      }
-    }
-  }, {
     key: '_get',
     value: function _get(path, node) {
       var object = node || this.tree;
@@ -313,18 +299,6 @@ var BPlusTree = (function () {
         object = object.v[path[index++]];
       }
       return object;
-    }
-  }, {
-    key: '_pathToChildPath',
-    value: function _pathToChildPath(path) {
-      if (!path.length) {
-        return path;
-      }
-      return path.map(function (p) {
-        return ['v', p];
-      }).reduce(function (a, b) {
-        return a.concat(b);
-      });
     }
   }, {
     key: '_genGetKeyFn',
@@ -462,7 +436,6 @@ var BPlusTree = (function () {
     key: '_doRemove',
     value: function _doRemove(key, val) {
       // get leaf for key, remove key from leaf
-      var numKeys = this.numKeys;
       var removed = this._removeKey(key, val);
       if (!removed) {
         return false;
@@ -474,11 +447,6 @@ var BPlusTree = (function () {
       var parentPath = path.slice(0, path.length - 1);
       var parent = this._get(parentPath);
       var index = parent.k.indexOf(key);
-
-      // we lost a key, need to update parent keys !
-      if (numKeys !== this.numKeys && index !== -1) {
-        this._set(this._pathToChildPath(parentPath).concat(['k', index]), leaf.k[0]);
-      }
 
       // if leaf is at least half full, terminate
       if (leaf.v.length >= this.minKeys) {
