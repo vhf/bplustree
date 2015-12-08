@@ -1,5 +1,5 @@
 /* eslint-env node, mocha */
-const BPlusTree = require('../dist/bplustree');
+const BPlusTree = require('../lib/bplustree');
 const assert = require('assert');
 
 const cmpFn = ((a, b) => { return (a < b) ? -1 : ((a > b) ? 1 : 0); });
