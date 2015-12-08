@@ -63,6 +63,7 @@ describe('BPTree', () => {
     assert.equal(tree.fetch(5), 'e');
     assert.equal(tree.fetch(6), 'f');
     assert.equal(tree.fetch(7), 'g');
+    assert.equal(tree.fetch(300), false);
     assert.equal(tree.fetch(8), 'h');
     assert.equal(tree.fetch(10), 'm');
     assert.equal(tree.fetch(11), 'n');
