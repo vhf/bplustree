@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "scripts": {
     "test": "mocha --compilers js:babel-core/register --check-leaks test/bplustree.js test/uniquebplustree.js && npm run build",
+    "test-full": "mocha --compilers js:babel-core/register --check-leaks test/bplustree.js test/uniquebplustree.js test/full.js && npm run build",
     "coverage": "babel-node node_modules/isparta/bin/isparta cover ./node_modules/mocha/bin/_mocha -- test/bplustree.js test/uniquebplustree.js",
+    "coverage-full": "babel-node node_modules/isparta/bin/isparta cover ./node_modules/mocha/bin/_mocha -- test/bplustree.js test/uniquebplustree.js test/full.js",
     "build": "babel lib -d dist",
     "benchmark": "npm run build && babel-node benchmark/bplustree.js"
   },
