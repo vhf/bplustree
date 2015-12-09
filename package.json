@@ -6,7 +6,7 @@
     "test-full": "mocha --compilers js:babel-core/register --check-leaks test/bplustree.js test/uniquebplustree.js test/full.js && npm run build",
     "coverage": "babel-node node_modules/isparta/bin/isparta cover ./node_modules/mocha/bin/_mocha -- test/bplustree.js test/uniquebplustree.js",
     "coverage-full": "babel-node node_modules/isparta/bin/isparta cover ./node_modules/mocha/bin/_mocha -- test/bplustree.js test/uniquebplustree.js test/full.js",
-    "build": "babel lib -d dist",
+    "build": "babel lib -d dist && jsdoc lib -d docs",
     "benchmark": "npm run build && babel-node benchmark/bplustree.js"
   },
   "devDependencies": {

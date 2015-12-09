@@ -4,11 +4,26 @@ var _createClass = (function () { function defineProperties(target, props) { for
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+/** Class representing a B+ Tree. */
+
 var BPlusTree = (function () {
-  function BPlusTree(order, cmpFn, debug) {
+  /**
+   * @param {Object} options
+   * @param {number} [options.order=4] - The tree order (or branching factor or node capacity)
+   * @param {boolean} [options.debug=false] - Check tree invariants after each insert / remove
+   * @param {string} [options.cmpFn=numericComparison] - Comparison function to use
+   */
+
+  function BPlusTree(options) {
     _classCallCheck(this, BPlusTree);
 
-    this.order = order || 4;
+    options || (options = {});
+    this.order = options.order || 4;
+    this.debug = options.debug || false;
+    this.cmpFn = options.cmpFn || function (a, b) {
+      return a < b ? -1 : a > b ? 1 : 0; // eslint-disable-line
+    };
+
     if (this.order % 2 !== 0 || this.order < 4) {
       throw new Error('order must be even and greater than 4');
     }
@@ -16,19 +31,24 @@ var BPlusTree = (function () {
     this.maxKeys = this.order - 1;
     this.numKeys = 0;
     this.numVals = 0;
-    this.debug = debug || false;
-
-    this.cmpFn = cmpFn || function (a, b) {
-      return a < b ? -1 : a > b ? 1 : 0; // eslint-disable-line
-    };
 
     this.tree = { t: 'leaf', k: [], v: [], n: null };
   }
 
+  /**
+   * Get a {k1: v1, k2: v2, ...} object representing the stored data
+   * @param {Object} options
+   * @param {boolean} [options.getKeys=false] - Instead of an object, get a list of all keys
+   * @param {boolean} [options.getValues=false] - Instead of an object, get a list of all values
+   * @param {boolean} [options.descending=false] - Get it reversed (only works if options.keys or options.values)
+   * @return {{keys: values}|Keys[]|Values[]}
+   */
+
   _createClass(BPlusTree, [{
     key: 'repr',
-    value: function repr(keys, values, sortDescending) {
-      var result = keys || values ? [] : {};
+    value: function repr(options) {
+      options || (options = {});
+      var result = options.getKeys || options.getValues ? [] : {};
       function walk(node) {
         if (node.t === 'branch') {
           var kids = node.v;
@@ -37,10 +57,10 @@ var BPlusTree = (function () {
           }
         } else if (node.t === 'leaf') {
           for (var i = 0, nkl = node.k.length; i < nkl; i++) {
-            if (values) {
-              result.push(node.v[i]);
-            } else if (keys) {
+            if (options.getKeys) {
               result.push(node.k[i]);
+            } else if (options.getValues) {
+              result.push(node.v[i]);
             } else {
               result[node.k[i]] = node.v[i];
             }
@@ -48,17 +68,29 @@ var BPlusTree = (function () {
         }
       }
       walk(this.tree);
-      if (sortDescending) {
+      if ((options.getKeys || options.getValues) && options.descending) {
         return result.reverse();
       }
       return result;
     }
+
+    /**
+     * Get all values between keys `lowerBound` and `upperBound`
+     * @param {number} lowerBound
+     * @param {number} upperBound
+     * @param {Object} options
+     * @param {boolean} [options.descending=false] - Get it reversed (only works if options.keys or options.values)
+     * @return {Values[]} A flat array of values, or empty array.
+     */
+
   }, {
     key: 'fetchRange',
-    value: function fetchRange(lowerBound, upperBound, sortDescending) {
+    value: function fetchRange(lowerBound, upperBound, options) {
+      options || (options = {});
+
       var result = [];
 
-      var leaf = this.fetch(lowerBound, true);
+      var leaf = this.fetch(lowerBound, { getLeaf: true });
       if (!leaf) {
         // should we look for a new lowerBound?
         return [];
@@ -82,7 +114,7 @@ var BPlusTree = (function () {
           result = result.concat(leaf.v.slice(index)).reduce(function (a, b) {
             return a.concat(b);
           }, []);
-          leaf = this.fetch(leaf.n, true);
+          leaf = this.fetch(leaf.n, { getLeaf: true });
           index = 0;
         } else {
           var i = index;
@@ -92,16 +124,25 @@ var BPlusTree = (function () {
         }
       }
 
-      if (sortDescending) {
+      if (options.descending) {
         result.reverse();
       }
 
       return result;
     }
+
+    /**
+     * Get tree depth (or height)
+     * @param {Object} options
+     * @param {BPTree.tree} [options.root=this.tree] - Tree to use
+     * @return {number} Computed depth
+     */
+
   }, {
     key: 'depth',
-    value: function depth(node) {
-      var tree = node || this.tree;
+    value: function depth(options) {
+      options || (options = {});
+      var tree = options.root || this.tree;
       var d = 0;
       while (tree.t === 'branch') {
         tree = tree.v[0];
@@ -109,11 +150,20 @@ var BPlusTree = (function () {
       }
       return d;
     }
+
+    /**
+     * Check tree's invariants
+     * @param {Object} options
+     * @param {BPTree.tree} [options.root=this.tree] - Tree to check
+     * @return {boolean} Returns `true` or throws an `Error()`
+     */
+
   }, {
     key: 'check',
-    value: function check(nodeToCheck) {
-      var tree = nodeToCheck || this.tree;
-      var depth = this.depth(tree);
+    value: function check(options) {
+      options || (options = {});
+      var tree = options.root || this.tree;
+      var depth = this.depth({ root: tree });
 
       function assert(expr, msg) {
         if (!expr) {
@@ -164,14 +214,26 @@ var BPlusTree = (function () {
         return true;
       }
 
-      assert(this.repr(true).length === this.numKeys, 'leaf count does not match');
+      assert(this.repr({ getKeys: true }).length === this.numKeys, 'leaf count does not match');
 
       return checking(this, tree, 0, [], []);
     }
+
+    /**
+     * Fetch the value(s) stored at `key`
+     * @param {*} key
+     * @param {Object} options
+     * @param {BPTree.tree} [options.root=this.tree] - Tree to search in
+     * @param {boolean} [options.getLeaf=false] - Return the leaf containing the value(s)
+     * @param {boolean} [options.getPath=false] - Return {val: value(s), leaf: leaf, path: pathFromRootToLeaf}
+     * @return {Value|Value[]|Leaf|Object}
+     */
+
   }, {
     key: 'fetch',
-    value: function fetch(needleKey, getLeaf, root, location) {
-      var node = root || this.tree;
+    value: function fetch(key, options) {
+      options || (options = {});
+      var node = options.root || this.tree;
 
       var index = undefined;
       var path = [];
@@ -179,7 +241,7 @@ var BPlusTree = (function () {
         index = 0;
         var found = false;
         for (var kl = node.k.length; index < kl; index++) {
-          if (this.cmpFn(node.k[index], needleKey) === 1) {
+          if (this.cmpFn(node.k[index], key) === 1) {
             found = true;
             break;
           }
@@ -192,15 +254,16 @@ var BPlusTree = (function () {
       }
 
       for (var j = 0, kl = node.k.length; j < kl; j++) {
-        if (this.cmpFn(needleKey, node.k[j]) === 0) {
-          if (location) {
-            return { val: node.v[j], node: node, path: path };
+        if (this.cmpFn(key, node.k[j]) === 0) {
+          var val = node.v[j];
+          if (options.getPath) {
+            return { val: val, leaf: node, path: path };
           }
-          if (getLeaf) {
+          if (options.getLeaf) {
             return node;
           }
-          return node.v[j];
-        } else if (this.cmpFn(node.k[j], needleKey) === 1) {
+          return val;
+        } else if (this.cmpFn(node.k[j], key) === 1) {
           break; // just to finish quicker; not needed for correctness
         }
       }
@@ -280,6 +343,14 @@ var BPlusTree = (function () {
       // If we got here, we need a new root.
       this.tree = { t: 'branch', k: [tween], v: [left, right], n: null };
     }
+
+    /**
+     * Insert value at key key
+     * @param {Key} key
+     * @param {Value} value
+     * @return {boolean} true
+     */
+
   }, {
     key: 'store',
     value: function store(key, value) {
@@ -287,6 +358,7 @@ var BPlusTree = (function () {
       if (this.debug) {
         this.check();
       }
+      return true;
     }
   }, {
     key: '_get',
@@ -392,28 +464,28 @@ var BPlusTree = (function () {
   }, {
     key: '_removeKey',
     value: function _removeKey(key, val) {
-      var fetched = this.fetch(key, null, null, true);
+      var fetched = this.fetch(key, { getPath: true });
 
       if (!fetched) {
         return false;
       }
 
-      var keyIndex = fetched.node.k.indexOf(key);
-      var valIndex = fetched.node.v[keyIndex].indexOf(val);
+      var keyIndex = fetched.leaf.k.indexOf(key);
+      var valIndex = fetched.leaf.v[keyIndex].indexOf(val);
 
       // key does not contain val
       if (val !== undefined && valIndex === -1) {
         return false;
       }
 
-      var valCount = fetched.node.v[keyIndex].length;
+      var valCount = fetched.leaf.v[keyIndex].length;
       var removed = undefined;
 
       // we only have one val, remove it together with its key
       if (valCount === 1 && keyIndex !== -1) {
-        fetched.node.k.splice(keyIndex, 1);
-        removed = fetched.node.v[keyIndex][0];
-        fetched.node.v.splice(keyIndex, 1);
+        fetched.leaf.k.splice(keyIndex, 1);
+        removed = fetched.leaf.v[keyIndex][0];
+        fetched.leaf.v.splice(keyIndex, 1);
         this.numKeys--;
       } else if (val !== undefined) {
         // key does not contain said val
@@ -421,8 +493,8 @@ var BPlusTree = (function () {
           return false;
         }
         // key contains val, but we have other vals, only remove this val
-        removed = fetched.node.v[keyIndex][valIndex];
-        fetched.node.v[keyIndex].splice(valIndex, 1);
+        removed = fetched.leaf.v[keyIndex][valIndex];
+        fetched.leaf.v[keyIndex].splice(valIndex, 1);
       } else {
         // key has several vals, we don't remove anything
         if (valCount > 1) {
@@ -432,7 +504,7 @@ var BPlusTree = (function () {
 
       // we lost one val
       this.numvals--;
-      return { val: removed, leaf: fetched.node, path: fetched.path };
+      return { val: removed, leaf: fetched.leaf, path: fetched.path };
     }
   }, {
     key: '_doRemove',
@@ -594,10 +666,18 @@ var BPlusTree = (function () {
       }
       return removed.val;
     }
+
+    /**
+     * Remove value from key key, or remove key and its value if key only has one value
+     * @param {Key} key
+     * @param {Value?} value
+     * @return {Value} The removed value
+     */
+
   }, {
     key: 'remove',
-    value: function remove(key, val) {
-      var removed = this._doRemove(key, val);
+    value: function remove(key, value) {
+      var removed = this._doRemove(key, value);
       if (this.debug) {
         this.check();
       }

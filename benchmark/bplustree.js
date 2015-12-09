@@ -95,7 +95,7 @@ async.series([
     suite.add({
       name: 'bplustree',
       setup: () => {
-        tree = new BPlusTree(bf);
+        tree = new BPlusTree({ order: bf })
       },
       fn: () => {
         for (const rec of db) {
@@ -107,7 +107,7 @@ async.series([
     suite.add({
       name: 'bplustree-old',
       setup: () => {
-        tree = new BPlusTree2(bf);
+        tree = new BPlusTree2({ order: bf })
       },
       fn: () => {
         for (const rec of db) {
@@ -147,8 +147,8 @@ async.series([
     const suite = new Benchmark.Suite();
     const results = [];
     const tree = new BPlusIndex({debug: false, branchingFactor: bf});
-    const tree2 = new BPlusTree(bf);
-    const tree3 = new BPlusTree2(bf);
+    const tree2 = new BPlusTree({ order: bf })
+    const tree3 = new BPlusTree2({ order: bf })
     const xs = [];
     const randKeys = _.chain(db).pluck('key').shuffle().value();
 
@@ -222,8 +222,8 @@ async.series([
     const suite = new Benchmark.Suite();
     const results = [];
     const tree = new BPlusIndex({debug: false, branchingFactor: bf});
-    const tree2 = new BPlusTree(bf);
-    const tree3 = new BPlusTree(bf);
+    const tree2 = new BPlusTree({ order: bf })
+    const tree3 = new BPlusTree({ order: bf })
     const xs = [];
 
     for (const rec of db) {
@@ -280,8 +280,8 @@ async.series([
     const suite = new Benchmark.Suite();
     const results = [];
     const tree = new BPlusIndex({debug: false, branchingFactor: bf});
-    const tree2 = new BPlusTree(bf);
-    const tree3 = new BPlusTree2(bf);
+    const tree2 = new BPlusTree({ order: bf })
+    const tree3 = new BPlusTree2({ order: bf })
     const xs = [];
 
     for (const rec of db) {
@@ -367,7 +367,7 @@ async.series([
     suite.add({
       name: 'bplustree',
       setup: () => {
-        tree2 = new BPlusTree(bf);
+        tree2 = new BPlusTree({ order: bf })
         for (const rec of db) {
           tree2.store(rec.key, rec.value);
         }
@@ -382,7 +382,7 @@ async.series([
     suite.add({
       name: 'bplustree-old',
       setup: () => {
-        tree3 = new BPlusTree2(bf);
+        tree3 = new BPlusTree2({ order: bf })
         for (const rec of db) {
           tree3.store(rec.key, rec.value);
         }

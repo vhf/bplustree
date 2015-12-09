@@ -4,30 +4,51 @@ var _createClass = (function () { function defineProperties(target, props) { for
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var BPlusTree = (function () {
-  function BPlusTree(order, cmpFn, debug) {
-    _classCallCheck(this, BPlusTree);
+/** Class representing a B+ Tree where one key only holds one value. */
 
-    this.order = order || 4;
+var UniqueBPlusTree = (function () {
+  /**
+   * @param {Object} options
+   * @param {number} [options.order=4] - The tree order (or branching factor or node capacity)
+   * @param {boolean} [options.debug=false] - Check tree invariants after each insert / remove
+   * @param {string} [options.cmpFn=numericComparison] - Comparison function to use
+   */
+
+  function UniqueBPlusTree(options) {
+    _classCallCheck(this, UniqueBPlusTree);
+
+    options || (options = {});
+    this.order = options.order || 4;
+    this.debug = options.debug || false;
+    this.cmpFn = options.cmpFn || function (a, b) {
+      return a < b ? -1 : a > b ? 1 : 0; // eslint-disable-line
+    };
+
     if (this.order % 2 !== 0 || this.order < 4) {
       throw new Error('order must be even and greater than 4');
     }
     this.minKeys = Math.ceil(this.order / 2);
     this.maxKeys = this.order - 1;
     this.numKeys = 0;
-    this.debug = debug || false;
-
-    this.cmpFn = cmpFn || function (a, b) {
-      return a < b ? -1 : a > b ? 1 : 0; // eslint-disable-line
-    };
+    this.numVals = 0;
 
     this.tree = { t: 'leaf', k: [], v: [], n: null };
   }
 
-  _createClass(BPlusTree, [{
+  /**
+   * Get a {k1: v1, k2: v2, ...} object representing the stored data
+   * @param {Object} options
+   * @param {boolean} [options.getKeys=false] - Instead of an object, get a list of all keys
+   * @param {boolean} [options.getValues=false] - Instead of an object, get a list of all values
+   * @param {boolean} [options.descending=false] - Get it reversed (only works if options.keys or options.values)
+   * @return {{keys: values}|Keys[]|Values[]}
+   */
+
+  _createClass(UniqueBPlusTree, [{
     key: 'repr',
-    value: function repr(keys, values, sortDescending) {
-      var result = keys || values ? [] : {};
+    value: function repr(options) {
+      options || (options = {});
+      var result = options.getKeys || options.getValues ? [] : {};
       function walk(node) {
         if (node.t === 'branch') {
           var kids = node.v;
@@ -36,10 +57,10 @@ var BPlusTree = (function () {
           }
         } else if (node.t === 'leaf') {
           for (var i = 0, nkl = node.k.length; i < nkl; i++) {
-            if (values) {
-              result.push(node.v[i]);
-            } else if (keys) {
+            if (options.getKeys) {
               result.push(node.k[i]);
+            } else if (options.getValues) {
+              result.push(node.v[i]);
             } else {
               result[node.k[i]] = node.v[i];
             }
@@ -47,17 +68,29 @@ var BPlusTree = (function () {
         }
       }
       walk(this.tree);
-      if (sortDescending) {
+      if ((options.getKeys || options.getValues) && options.descending) {
         return result.reverse();
       }
       return result;
     }
+
+    /**
+     * Get all values between keys `lowerBound` and `upperBound`
+     * @param {number} lowerBound
+     * @param {number} upperBound
+     * @param {Object} options
+     * @param {boolean} [options.descending=false] - Get it reversed (only works if options.keys or options.values)
+     * @return {Values[]} A flat array of values, or empty array.
+     */
+
   }, {
     key: 'fetchRange',
-    value: function fetchRange(lowerBound, upperBound, sortDescending) {
+    value: function fetchRange(lowerBound, upperBound, options) {
+      options || (options = {});
+
       var result = [];
 
-      var leaf = this.fetch(lowerBound, true);
+      var leaf = this.fetch(lowerBound, { getLeaf: true });
       if (!leaf) {
         // should we look for a new lowerBound?
         return [];
@@ -75,7 +108,7 @@ var BPlusTree = (function () {
           break;
         } else if (this.cmpFn(leaf.k[leaf.k.length - 1], upperBound) === -1) {
           result = result.concat(leaf.v.slice(index));
-          leaf = this.fetch(leaf.n, true);
+          leaf = this.fetch(leaf.n, { getLeaf: true });
           index = 0;
         } else {
           var i = index;
@@ -85,16 +118,25 @@ var BPlusTree = (function () {
         }
       }
 
-      if (sortDescending) {
+      if (options.descending) {
         result.reverse();
       }
 
       return result;
     }
+
+    /**
+     * Get tree depth (or height)
+     * @param {Object} options
+     * @param {BPTree.tree} [options.root=this.tree] - Tree to use
+     * @return {number} Computed depth
+     */
+
   }, {
     key: 'depth',
-    value: function depth(node) {
-      var tree = node || this.tree;
+    value: function depth(options) {
+      options || (options = {});
+      var tree = options.root || this.tree;
       var d = 0;
       while (tree.t === 'branch') {
         tree = tree.v[0];
@@ -102,11 +144,20 @@ var BPlusTree = (function () {
       }
       return d;
     }
+
+    /**
+     * Check tree's invariants
+     * @param {Object} options
+     * @param {BPTree.tree} [options.root=this.tree] - Tree to check
+     * @return {boolean} Returns `true` or throws an `Error()`
+     */
+
   }, {
     key: 'check',
-    value: function check(nodeToCheck) {
-      var tree = nodeToCheck || this.tree;
-      var depth = this.depth(tree);
+    value: function check(options) {
+      options || (options = {});
+      var tree = options.root || this.tree;
+      var depth = this.depth({ root: tree });
 
       function assert(expr, msg) {
         if (!expr) {
@@ -157,14 +208,26 @@ var BPlusTree = (function () {
         return true;
       }
 
-      assert(this.repr(true).length === this.numKeys, 'leaf count does not match');
+      assert(this.repr({ getKeys: true }).length === this.numKeys, 'leaf count does not match');
 
       return checking(this, tree, 0, [], []);
     }
+
+    /**
+     * Fetch the value(s) stored at `key`
+     * @param {*} key
+     * @param {Object} options
+     * @param {BPTree.tree} [options.root=this.tree] - Tree to search in
+     * @param {boolean} [options.getLeaf=false] - Return the leaf containing the value(s)
+     * @param {boolean} [options.getPath=false] - Return {val: value(s), leaf: leaf, path: pathFromRootToLeaf}
+     * @return {Value|Value[]|Leaf|Object}
+     */
+
   }, {
     key: 'fetch',
-    value: function fetch(needleKey, getLeaf, root, location) {
-      var node = root || this.tree;
+    value: function fetch(key, options) {
+      options || (options = {});
+      var node = options.root || this.tree;
 
       var index = undefined;
       var path = [];
@@ -172,7 +235,7 @@ var BPlusTree = (function () {
         index = 0;
         var found = false;
         for (var kl = node.k.length; index < kl; index++) {
-          if (this.cmpFn(node.k[index], needleKey) === 1) {
+          if (this.cmpFn(node.k[index], key) === 1) {
             found = true;
             break;
           }
@@ -185,15 +248,16 @@ var BPlusTree = (function () {
       }
 
       for (var j = 0, kl = node.k.length; j < kl; j++) {
-        if (this.cmpFn(needleKey, node.k[j]) === 0) {
-          if (location) {
-            return { val: node.v[j], node: getLeaf ? node : node.v[j], path: path };
+        if (this.cmpFn(key, node.k[j]) === 0) {
+          var val = node.v[j];
+          if (options.getPath) {
+            return { val: val, leaf: node, path: path };
           }
-          if (getLeaf) {
+          if (options.getLeaf) {
             return node;
           }
-          return node.v[j];
-        } else if (this.cmpFn(node.k[j], needleKey) === 1) {
+          return val;
+        } else if (this.cmpFn(node.k[j], key) === 1) {
           break; // just to finish quicker; not needed for correctness
         }
       }
@@ -244,6 +308,7 @@ var BPlusTree = (function () {
       node.k.splice(i, 0, key);
       node.v.splice(i, 0, value);
       this.numKeys += 1;
+      this.numVals += 1;
 
       if (node.k.length < this.order) {
         return;
@@ -272,6 +337,14 @@ var BPlusTree = (function () {
       // If we got here, we need a new root.
       this.tree = { t: 'branch', k: [tween], v: [left, right], n: null };
     }
+
+    /**
+     * Insert value at key key
+     * @param {Key} key
+     * @param {Value} value
+     * @return {boolean} true
+     */
+
   }, {
     key: 'store',
     value: function store(key, value) {
@@ -384,20 +457,20 @@ var BPlusTree = (function () {
   }, {
     key: '_removeKey',
     value: function _removeKey(key) {
-      var fetched = this.fetch(key, true, null, true);
+      var fetched = this.fetch(key, { getPath: true });
 
       if (!fetched) {
         return false;
       }
 
-      var index = fetched.node.k.indexOf(key);
+      var index = fetched.leaf.k.indexOf(key);
       if (index !== -1) {
-        fetched.node.k.splice(index, 1);
-        fetched.node.v.splice(index, 1);
+        fetched.leaf.k.splice(index, 1);
+        fetched.leaf.v.splice(index, 1);
       }
 
       this.numKeys--;
-      return { val: fetched.val, leaf: fetched.node, path: fetched.path };
+      return { val: fetched.val, leaf: fetched.leaf, path: fetched.path };
     }
   }, {
     key: '_doRemove',
@@ -528,7 +601,7 @@ var BPlusTree = (function () {
           }
         }
 
-        if (this.tree.t !== 'leaf' && this.tree.v.length < 2) {
+        if (this.tree.v.length < 2 && this.tree.t !== 'leaf') {
           // underpopulated root
           if (this.tree.v[index].v.length > this.maxKeys) {
             // need to split
@@ -559,6 +632,13 @@ var BPlusTree = (function () {
       }
       return removed.val;
     }
+
+    /**
+     * Remove key and its value
+     * @param {Key} key
+     * @return {Value} The removed value
+     */
+
   }, {
     key: 'remove',
     value: function remove(key) {
@@ -588,7 +668,7 @@ var BPlusTree = (function () {
     }
   }]);
 
-  return BPlusTree;
+  return UniqueBPlusTree;
 })();
 
 module.exports = BPlusTree;

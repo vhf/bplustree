@@ -1,4 +1,32 @@
-/** Class representing a B+ Tree. */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bplustree.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bplustree.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/** Class representing a B+ Tree. */
 class BPlusTree {
   /**
    * @param {Object} options
@@ -11,10 +39,10 @@ class BPlusTree {
     this.order = options.order || 4;
     this.debug = options.debug || false;
     this.cmpFn = options.cmpFn || ((a, b) => {
-      return (a < b) ? -1 : ((a > b) ? 1 : 0); // eslint-disable-line
+      return (a &lt; b) ? -1 : ((a > b) ? 1 : 0); // eslint-disable-line
     });
 
-    if (this.order % 2 !== 0 || this.order < 4) {
+    if (this.order % 2 !== 0 || this.order &lt; 4) {
       throw new Error('order must be even and greater than 4');
     }
     this.minKeys = Math.ceil(this.order / 2);
@@ -39,11 +67,11 @@ class BPlusTree {
     function walk(node) {
       if (node.t === 'branch') {
         const kids = node.v;
-        for (let i = 0, kl = kids.length; i < kl; i++) {
+        for (let i = 0, kl = kids.length; i &lt; kl; i++) {
           walk(kids[i]);
         }
       } else if (node.t === 'leaf') {
-        for (let i = 0, nkl = node.k.length; i < nkl; i++) {
+        for (let i = 0, nkl = node.k.length; i &lt; nkl; i++) {
           if (options.getKeys) {
             result.push(node.k[i]);
           } else if (options.getValues) {
@@ -55,7 +83,7 @@ class BPlusTree {
       }
     }
     walk(this.tree);
-    if ((options.getKeys || options.getValues) && options.descending) {
+    if ((options.getKeys || options.getValues) &amp;&amp; options.descending) {
       return result.reverse();
     }
     return result;
@@ -82,7 +110,7 @@ class BPlusTree {
 
     let index = leaf.k.indexOf(lowerBound);
 
-    while (leaf.k[index] <= upperBound) {
+    while (leaf.k[index] &lt;= upperBound) {
       if (this.cmpFn(leaf.k[index], upperBound) === 0) {
         result = result.concat(leaf.v[index]).reduce((a, b) => a.concat(b), []);
         break;
@@ -96,7 +124,7 @@ class BPlusTree {
         index = 0;
       } else {
         let i = index;
-        for (; i < leaf.k.length && leaf.k[i] <= upperBound; i++);
+        for (; i &lt; leaf.k.length &amp;&amp; leaf.k[i] &lt;= upperBound; i++);
         result = result.concat(leaf.k.slice(0, i));
         break;
       }
@@ -147,13 +175,13 @@ class BPlusTree {
       const node = currentNode;
       const keysLength = node.k.length;
 
-      assert(keysLength <= self.maxKeys, 'Overflowed node');
+      assert(keysLength &lt;= self.maxKeys, 'Overflowed node');
 
-      for (let i = 0, kl = keysLength - 1; i < kl; i++) {
+      for (let i = 0, kl = keysLength - 1; i &lt; kl; i++) {
         assert(self.cmpFn(node.k[i], node.k[i + 1]) === -1, 'Disordered or duplicate key');
       }
 
-      assert(lo.length === 0 || self.cmpFn(lo[0], node.k[0]) < 1, 'lo error');
+      assert(lo.length === 0 || self.cmpFn(lo[0], node.k[0]) &lt; 1, 'lo error');
       assert(hi.length === 0 || self.cmpFn(node.k[keysLength - 1], hi[0]) === -1, 'hi error');
 
       if (node.t === 'branch') {
@@ -168,7 +196,7 @@ class BPlusTree {
 
         assert(keysLength === kidsLength - 1, 'keys and kids don\'t correspond');
 
-        for (let i = 0; i < kidsLength; i++) {
+        for (let i = 0; i &lt; kidsLength; i++) {
           const newLo = (i === 0 ? lo : [node.k[i - 1]]);
           const newHi = (i === keysLength ? hi : [node.k[i]]);
           checking(self, kids[i], currentDepth + 1, newLo, newHi);
@@ -209,7 +237,7 @@ class BPlusTree {
     while (node.t === 'branch') {
       index = 0;
       let found = false;
-      for (let kl = node.k.length; index < kl; index++) {
+      for (let kl = node.k.length; index &lt; kl; index++) {
         if (this.cmpFn(node.k[index], key) === 1) {
           found = true;
           break;
@@ -222,7 +250,7 @@ class BPlusTree {
       path.push(index);
     }
 
-    for (let j = 0, kl = node.k.length; j < kl; j++) {
+    for (let j = 0, kl = node.k.length; j &lt; kl; j++) {
       if (this.cmpFn(key, node.k[j]) === 0) {
         const val = node.v[j];
         if (options.getPath) {
@@ -247,7 +275,7 @@ class BPlusTree {
     while (node.t === 'branch') {
       let i = 0;
       let found = false;
-      for (let nkl = node.k.length; i < nkl; i++) {
+      for (let nkl = node.k.length; i &lt; nkl; i++) {
         if (this.cmpFn(key, node.k[i]) === -1) {
           found = true;
           break;
@@ -264,7 +292,7 @@ class BPlusTree {
     let i = 0;
     let found = false;
     const nkl = node.k.length;
-    for (; i < nkl; i++) {
+    for (; i &lt; nkl; i++) {
       if (this.cmpFn(key, node.k[i]) === 0) {
         // key isn't actually new, so the structure goes unchanged.
         node.v[i].push(value);
@@ -284,7 +312,7 @@ class BPlusTree {
     this.numKeys += 1;
     this.numVals += 1;
 
-    if (node.k.length < this.order) {
+    if (node.k.length &lt; this.order) {
       return;
     }
 
@@ -300,7 +328,7 @@ class BPlusTree {
       node.k.splice(node.i, 0, tween);
       node.v[node.i] = left;
       node.v.splice(node.i + 1, 0, right);
-      if (node.k.length < this.maxKeys) {
+      if (node.k.length &lt; this.maxKeys) {
         return;
       }
       tween = node.k[mid - 1];
@@ -331,7 +359,7 @@ class BPlusTree {
     let index = 0;
     const length = path.length;
 
-    while (object && index < length) {
+    while (object &amp;&amp; index &lt; length) {
       object = object.v[path[index++]];
     }
     return object;
@@ -365,7 +393,7 @@ class BPlusTree {
       (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
     ];
     const length = fn.length;
-    return (depth < length - 1 && ((o) => fn[depth](o).k[0])) || this._genGetKeyFn(fn[length - 1], depth - length + 1);
+    return (depth &lt; length - 1 &amp;&amp; ((o) => fn[depth](o).k[0])) || this._genGetKeyFn(fn[length - 1], depth - length + 1);
   }
 
   _fixKeys() {
@@ -373,7 +401,7 @@ class BPlusTree {
     function walk(node, depth, path) {
       if (node.t === 'branch') {
         const kids = node.v;
-        for (let i = 0, kl = kids.length; i < kl; i++) {
+        for (let i = 0, kl = kids.length; i &lt; kl; i++) {
           if (kids[i].t === 'branch') {
             const newPath = path.slice(0, depth).concat([i]);
             result.push(newPath);
@@ -383,7 +411,7 @@ class BPlusTree {
       }
     }
     walk(this.tree, 0, []);
-    result = result.sort((a, b) => (a.length > b.length) ? -1 : ((a.length < b.length) ? 1 : 0)); // eslint-disable-line
+    result = result.sort((a, b) => (a.length > b.length) ? -1 : ((a.length &lt; b.length) ? 1 : 0)); // eslint-disable-line
 
     result.forEach((path) => {
       const sub = this._get(path);
@@ -408,7 +436,7 @@ class BPlusTree {
     const valIndex = fetched.leaf.v[keyIndex].indexOf(val);
 
     // key does not contain val
-    if (val !== undefined && valIndex === -1) {
+    if (val !== undefined &amp;&amp; valIndex === -1) {
       return false;
     }
 
@@ -416,7 +444,7 @@ class BPlusTree {
     let removed;
 
     // we only have one val, remove it together with its key
-    if (valCount === 1 && keyIndex !== -1) {
+    if (valCount === 1 &amp;&amp; keyIndex !== -1) {
       fetched.leaf.k.splice(keyIndex, 1);
       removed = fetched.leaf.v[keyIndex][0];
       fetched.leaf.v.splice(keyIndex, 1);
@@ -467,9 +495,9 @@ class BPlusTree {
 
     // if rightSibling is more than half full, borrow leftmost value
     let canBorrowRight = false;
-    if (leafIndex < parent.v.length - 1) {
+    if (leafIndex &lt; parent.v.length - 1) {
       const rightSibling = parent.v[leafIndex + 1];
-      if (rightSibling && rightSibling.k.length > this.minKeys) {
+      if (rightSibling &amp;&amp; rightSibling.k.length > this.minKeys) {
         // can borrow from right because it is more than half full
         canBorrowRight = true;
         const keyToBorrow = rightSibling.k.shift();
@@ -488,7 +516,7 @@ class BPlusTree {
     let canBorrowLeft = false;
     if (leafIndex > 0) {
       const leftSibling = parent.v[leafIndex - 1];
-      if (leftSibling && leftSibling.k.length > this.minKeys) {
+      if (leftSibling &amp;&amp; leftSibling.k.length > this.minKeys) {
         // can borrow from left because it is more than half full
         canBorrowLeft = true;
         const keyToBorrow = leftSibling.k.pop();
@@ -502,7 +530,7 @@ class BPlusTree {
       }
     }
 
-    if (!canBorrowRight && !canBorrowLeft) {
+    if (!canBorrowRight &amp;&amp; !canBorrowLeft) {
       let again = true;
       let lastIndex;
       while (again) {
@@ -515,22 +543,22 @@ class BPlusTree {
           again = false;
         }
 
-        const mergeNeeded = parent.t !== 'leaf' && parent.v[lastIndex].k.length < this.minKeys;
+        const mergeNeeded = parent.t !== 'leaf' &amp;&amp; parent.v[lastIndex].k.length &lt; this.minKeys;
 
         if (mergeNeeded) {
           const leftExists = parent.v[lastIndex - 1];
-          let leftSum = leftExists && parent.v[lastIndex - 1].k.length + parent.v[lastIndex].k.length;
+          let leftSum = leftExists &amp;&amp; parent.v[lastIndex - 1].k.length + parent.v[lastIndex].k.length;
           leftSum += parent.v[lastIndex].t === 'leaf' ? 0 : 1;
-          const roomOnLeft = leftExists && leftSum && leftSum <= this.maxKeys;
+          const roomOnLeft = leftExists &amp;&amp; leftSum &amp;&amp; leftSum &lt;= this.maxKeys;
 
           const rightExists = parent.v[lastIndex + 1];
-          let rightSum = rightExists && parent.v[lastIndex + 1].k.length + parent.v[lastIndex].k.length;
+          let rightSum = rightExists &amp;&amp; parent.v[lastIndex + 1].k.length + parent.v[lastIndex].k.length;
           rightSum += parent.v[lastIndex].t === 'leaf' ? 0 : 1;
-          const roomOnRight = rightExists && rightSum && rightSum <= this.maxKeys;
+          const roomOnRight = rightExists &amp;&amp; rightSum &amp;&amp; rightSum &lt;= this.maxKeys;
 
           let splitIndex = false;
 
-          if ((leftExists && roomOnLeft) || (leftExists && !roomOnRight)) {
+          if ((leftExists &amp;&amp; roomOnLeft) || (leftExists &amp;&amp; !roomOnRight)) {
             if (!roomOnLeft) {
               splitIndex = lastIndex - 1;
             }
@@ -560,7 +588,7 @@ class BPlusTree {
         }
       }
 
-      if (this.tree.v.length < 2 && this.tree.t !== 'leaf') {
+      if (this.tree.v.length &lt; 2 &amp;&amp; this.tree.t !== 'leaf') {
         // underpopulated root
         if (this.tree.v[index].v.length > this.maxKeys) {
           // need to split
@@ -578,7 +606,7 @@ class BPlusTree {
           this.tree.t = 'leaf';
           this.tree = this.tree.v[index];
           const slice = this.tree.v.slice(1);
-          if (slice.length && slice[0].t) {
+          if (slice.length &amp;&amp; slice[0].t) {
             this.tree.k = slice.map((n) => n.k[0]);
           }
         }
@@ -622,3 +650,26 @@ class BPlusTree {
 }
 
 module.exports = BPlusTree;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BPlusTree.html">BPlusTree</a></li><li><a href="UniqueBPlusTree.html">UniqueBPlusTree</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Dec 09 2015 20:36:15 GMT+0100 (CET)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

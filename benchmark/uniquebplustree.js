@@ -82,7 +82,7 @@ async.series([
     suite.add({
       name: 'bplustree',
       setup: () => {
-        tree = new BPlusTree(bf);
+        tree = new BPlusTree({ order: bf })
       },
       fn: () => {
         for (const rec of db) {
@@ -122,7 +122,7 @@ async.series([
     const suite = new Benchmark.Suite();
     const results = [];
     const tree = new BPlusIndex({debug: false, branchingFactor: bf});
-    const tree2 = new BPlusTree(bf);
+    const tree2 = new BPlusTree({ order: bf })
     const xs = [];
     let randKey;
 
@@ -181,7 +181,7 @@ async.series([
     const suite = new Benchmark.Suite();
     const results = [];
     const tree = new BPlusIndex({debug: false, branchingFactor: bf});
-    const tree2 = new BPlusTree(bf);
+    const tree2 = new BPlusTree({ order: bf })
     const xs = [];
 
     for (const rec of db) {
@@ -230,7 +230,7 @@ async.series([
     const suite = new Benchmark.Suite();
     const results = [];
     const tree = new BPlusIndex({debug: false, branchingFactor: bf});
-    const tree2 = new BPlusTree(bf);
+    const tree2 = new BPlusTree({ order: bf })
     const xs = [];
 
     for (const rec of db) {
@@ -306,7 +306,7 @@ async.series([
     suite.add({
       name: 'bplustree',
       setup: () => {
-        tree2 = new BPlusTree(bf);
+        tree2 = new BPlusTree({ order: bf })
         for (const rec of db) {
           tree2.store(rec.key, rec.value);
         }
