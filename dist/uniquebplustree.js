@@ -421,6 +421,7 @@ var BPlusTree = (function () {
       }
 
       var leafIndex = path[path.length - 1];
+      var noFix = false;
 
       // else borrow
 
@@ -436,15 +437,12 @@ var BPlusTree = (function () {
           leaf.k.push(keyToBorrow);
           leaf.v.push(valBorrowed);
           leaf.n = rightSibling.k[0];
-          var parentKeys = [];
-          for (var i = parent.v.length - 2; i >= 0; i--) {
-            var k = parent.v[i + 1].k[0];
-            parent.v[i].n = k;
-            parentKeys.unshift(k);
-          }
-          parent.k = parentKeys;
+          parent.k = parent.v.slice(1).map(function (o) {
+            return o.k[0];
+          });
           parent.v[leafIndex] = leaf;
           parent.v[leafIndex + 1] = rightSibling;
+          noFix = true;
         }
       }
 
@@ -459,15 +457,12 @@ var BPlusTree = (function () {
           var valBorrowed = leftSibling.v.pop();
           leaf.k.unshift(keyToBorrow);
           leaf.v.unshift(valBorrowed);
-          var parentKeys = [];
-          for (var i = parent.v.length - 2; i >= 0; i--) {
-            var k = parent.v[i + 1].k[0];
-            parent.v[i].n = k;
-            parentKeys.unshift(k);
-          }
-          parent.k = parentKeys;
+          parent.k = parent.v.slice(1).map(function (o) {
+            return o.k[0];
+          });
           parent.v[leafIndex] = leaf;
           parent.v[leafIndex - 1] = leftSibling;
+          noFix = true;
         }
       }
 
@@ -558,7 +553,9 @@ var BPlusTree = (function () {
             }
           }
         }
-        this._fixKeys();
+        if (!noFix) {
+          this._fixKeys();
+        }
       }
       return removed.val;
     }
