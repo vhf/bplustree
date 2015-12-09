@@ -8,6 +8,7 @@ const faker = require('faker');
 
 const BPlusIndex = require('../node_modules/bplus-index/dist/bplus-index');
 const BPlusTree = require('../dist/bplustree');
+const UniqueBPlusTree = require('../dist/uniquebplustree');
 const Benchmark = require('benchmark');
 const Set = require('../node_modules/sorted-map');
 
@@ -41,23 +42,20 @@ Benchmark.support.decompilation = false;
 const finalResults = [];
 
 const compileResult = (results) => {
-  let text = '';
-  text += `bplus-index ${results[0].toFixed(2)} ops/sec\n`;
-  text += `bplustree   ${results[1].toFixed(2)} ops/sec\n`;
-  if (old) {
-    text += `old         ${results[2].toFixed(2)} ops/sec\n`;
-  }
-  text += `sorted-map  ${results[old ? 3 : 2].toFixed(2)} ops/sec\n`;
-  text += `array       ${results[old ? 4 : 3].toFixed(2)} ops/sec\n`;
-
   let methods = [
-    'bplus-index',
-    'bplustree  ',
-    'old        ',
-    'sorted-map ',
-    'array      '];
+    'bplus-index    ',
+    'bplustree      ',
+    'bplustree (u)  ',
+    'old            ',
+    'sorted-map (u) ',
+    'array          '];
   if (!old) {
-    methods = methods.filter((o) => o !== 'old        ');
+    methods = methods.filter((o) => o !== 'old            ');
+  }
+
+  let text = '';
+  for (let i = 0; i < methods.length; i++) {
+    text += `${methods[i]} ${results[i].toFixed(2)} ops/sec\n`;
   }
 
   const zip = _.zip(methods, results);
@@ -73,6 +71,8 @@ const compileResult = (results) => {
     }
     if (speedup > 50) {
       text += ` (ultra ${adj})`;
+    } else if (speedup > 25) {
+      text += ` (super ${adj})`;
     } else if (speedup > 10) {
       text += ` (${adj})`;
     }
@@ -95,10 +95,10 @@ const compileResult = (results) => {
 };
 
 const compileFinalResults = () => {
-  const ordered = _.chain(finalResults).sortBy('score').value();
+  const ordered = _.sortBy(finalResults, 'score');
   const max = ordered[0].score;
 
-  let text = 'Final results:\n                     i g a r e\n';
+  let text = 'Final results:\n                         i g a r e\n';
   for (let i = 0; i < ordered.length; i++) {
     const cur = (ordered[i].score / max).toFixed(2);
     const method = ordered[i].method;
@@ -112,8 +112,8 @@ log('Creating database of ' + dbSize + ' records');
 console.time('Done!');
 for (let i = 0; i < dbSize; i++) {
   const rec = {
-    key: faker.random.number({max: 90}),
-    value: faker.name.findName(),
+    age: faker.random.number({max: 90}),
+    name: faker.name.findName(),
   };
   db.push(rec);
 }
@@ -141,7 +141,7 @@ async.series([
       },
       fn: () => {
         for (const rec of db) {
-          tree.inject(rec.key, rec.value);
+          tree.inject(rec.age, rec.name);
         }
       },
     });
@@ -153,7 +153,19 @@ async.series([
       },
       fn: () => {
         for (const rec of db) {
-          tree.store(rec.key, rec.value);
+          tree.store(rec.age, rec.name);
+        }
+      },
+    });
+
+    suite.add({
+      name: 'uniquebplustree',
+      setup: () => {
+        tree = new UniqueBPlusTree({ order: bf });
+      },
+      fn: () => {
+        for (const rec of db) {
+          tree.store(rec.age, rec.name);
         }
       },
     });
@@ -166,7 +178,7 @@ async.series([
         },
         fn: () => {
           for (const rec of db) {
-            tree.store(rec.key, rec.value);
+            tree.store(rec.age, rec.name);
           }
         },
       });
@@ -179,7 +191,7 @@ async.series([
       },
       fn: () => {
         for (const rec of db) {
-          sortedMap.set(rec.key, rec.value);
+          sortedMap.set(rec.age, rec.name);
         }
       },
     });
@@ -191,7 +203,7 @@ async.series([
       },
       fn: () => {
         for (const rec of db) {
-          xs.push({key: rec.key, val: rec.value});
+          xs.push({key: rec.age, val: rec.name});
         }
       },
     });
@@ -217,16 +229,18 @@ async.series([
     const tree = new BPlusIndex({debug: false, branchingFactor: bf});
     const tree2 = new BPlusTree({ order: bf });
     const tree3 = new BPlusTree2({ order: bf });
+    const tree4 = new UniqueBPlusTree({ order: bf });
     const sortedMap = new Set();
     const xs = [];
     const randKeys = _.chain(db).pluck('key').shuffle().value();
 
     for (const rec of db) {
-      tree.inject(rec.key, rec.value);
-      tree2.store(rec.key, rec.value);
-      tree3.store(rec.key, rec.value);
-      sortedMap.set(rec.key, rec.value);
-      xs.push({key: rec.key, val: rec.value});
+      tree.inject(rec.age, rec.name);
+      tree2.store(rec.age, rec.name);
+      tree3.store(rec.age, rec.name);
+      tree4.store(rec.age, rec.name);
+      sortedMap.set(rec.age, rec.name);
+      xs.push({key: rec.age, val: rec.name});
     }
 
     suite.add({
@@ -243,6 +257,15 @@ async.series([
       fn: () => {
         for (let i = 0; i < 25; i++) {
           tree2.fetch(randKeys[i]);
+        }
+      },
+    });
+
+    suite.add({
+      name: 'uniquebplustree',
+      fn: () => {
+        for (let i = 0; i < 25; i++) {
+          tree4.fetch(randKeys[i]);
         }
       },
     });
@@ -297,15 +320,17 @@ async.series([
     const tree = new BPlusIndex({debug: false, branchingFactor: bf});
     const tree2 = new BPlusTree({ order: bf });
     const tree3 = new BPlusTree({ order: bf });
+    const tree4 = new UniqueBPlusTree({ order: bf });
     const sortedMap = new Set();
     const xs = [];
 
     for (const rec of db) {
-      tree.inject(rec.key, rec.value);
-      tree2.store(rec.key, rec.value);
-      tree3.store(rec.key, rec.value);
-      sortedMap.set(rec.key, rec.value);
-      xs.push({key: rec.key, val: rec.value});
+      tree.inject(rec.age, rec.name);
+      tree2.store(rec.age, rec.name);
+      tree3.store(rec.age, rec.name);
+      tree4.store(rec.age, rec.name);
+      sortedMap.set(rec.age, rec.name);
+      xs.push({key: rec.age, val: rec.name});
     }
 
     suite.add({
@@ -318,7 +343,14 @@ async.series([
     suite.add({
       name: 'bplustree',
       fn: () => {
-        tree2.repr(false, true);
+        tree2.repr({ getValues: true });
+      },
+    });
+
+    suite.add({
+      name: 'uniquebplustree',
+      fn: () => {
+        tree4.repr({ getValues: true });
       },
     });
 
@@ -326,7 +358,7 @@ async.series([
       suite.add({
         name: 'old',
         fn: () => {
-          tree3.repr(false, true);
+          tree3.repr({ getValues: true });
         },
       });
     }
@@ -366,19 +398,21 @@ async.series([
     const tree = new BPlusIndex({debug: false, branchingFactor: bf});
     const tree2 = new BPlusTree({ order: bf });
     const tree3 = new BPlusTree2({ order: bf });
+    const tree4 = new UniqueBPlusTree({ order: bf });
     const sortedMap = new Set();
     const xs = [];
 
     for (const rec of db) {
-      tree.inject(rec.key, rec.value);
-      tree2.store(rec.key, rec.value);
-      tree3.store(rec.key, rec.value);
-      sortedMap.set(rec.key, rec.value);
-      xs.push({key: rec.key, val: rec.value});
+      tree.inject(rec.age, rec.name);
+      tree2.store(rec.age, rec.name);
+      tree3.store(rec.age, rec.name);
+      tree4.store(rec.age, rec.name);
+      sortedMap.set(rec.age, rec.name);
+      xs.push({key: rec.age, val: rec.name});
     }
 
-    const lowerBound = db[Math.floor(dbSize / 5)].key;
-    const upperBound = db[dbSize - Math.floor(dbSize / 5)].key;
+    const lowerBound = db[Math.floor(dbSize / 5)].age;
+    const upperBound = db[dbSize - Math.floor(dbSize / 5)].age;
 
     suite.add({
       name: 'bplus-index',
@@ -391,6 +425,13 @@ async.series([
       name: 'bplustree',
       fn: () => {
         tree2.fetchRange(lowerBound, upperBound);
+      },
+    });
+
+    suite.add({
+      name: 'uniquebplustree',
+      fn: () => {
+        tree4.fetchRange(lowerBound, upperBound);
       },
     });
 
@@ -413,9 +454,9 @@ async.series([
     suite.add({
       name: 'array',
       fn: () => {
-        const left = _.findIndex(xs, (x) => x.key === lowerBound);
+        const left = _.findIndex(xs, (x) => x.age === lowerBound);
         let range = xs.slice(left);
-        const right = _.findIndex(range, (x) => x.key === upperBound);
+        const right = _.findIndex(range, (x) => x.age === upperBound);
         range = range.slice(0, right);
       },
     });
@@ -441,6 +482,7 @@ async.series([
     let tree;
     let tree2;
     let tree3;
+    let tree4;
     let xs;
     let sortedMap;
     const randRecs = _.shuffle(db);
@@ -450,12 +492,12 @@ async.series([
       setup: () => {
         tree = new BPlusIndex({debug: false, branchingFactor: bf});
         for (const rec of db) {
-          tree.inject(rec.key, rec.value);
+          tree.inject(rec.age, rec.name);
         }
       },
       fn: () => {
         for (let i = 0; i < 25; i++) {
-          tree.eject(randRecs[i].key, randRecs[i].name);
+          tree.eject(randRecs[i].age, randRecs[i].name);
         }
       },
     });
@@ -465,12 +507,27 @@ async.series([
       setup: () => {
         tree2 = new BPlusTree({ order: bf });
         for (const rec of db) {
-          tree2.store(rec.key, rec.value);
+          tree2.store(rec.age, rec.name);
         }
       },
       fn: () => {
         for (let i = 0; i < 25; i++) {
-          tree2.remove(randRecs[i].key, randRecs[i].value);
+          tree2.remove(randRecs[i].age, randRecs[i].name);
+        }
+      },
+    });
+
+    suite.add({
+      name: 'uniquebplustree',
+      setup: () => {
+        tree4 = new BPlusTree({ order: bf });
+        for (const rec of db) {
+          tree4.store(rec.age, rec.name);
+        }
+      },
+      fn: () => {
+        for (let i = 0; i < 25; i++) {
+          tree4.remove(randRecs[i].age, randRecs[i].name);
         }
       },
     });
@@ -481,12 +538,12 @@ async.series([
         setup: () => {
           tree3 = new BPlusTree2({ order: bf });
           for (const rec of db) {
-            tree3.store(rec.key, rec.value);
+            tree3.store(rec.age, rec.name);
           }
         },
         fn: () => {
           for (let i = 0; i < 25; i++) {
-            tree3.remove(randRecs[i].key, randRecs[i].value);
+            tree3.remove(randRecs[i].age, randRecs[i].name);
           }
         },
       });
@@ -497,12 +554,12 @@ async.series([
       setup: () => {
         sortedMap = new Set();
         for (const rec of db) {
-          sortedMap.set(rec.key, rec.value);
+          sortedMap.set(rec.age, rec.name);
         }
       },
       fn: () => {
         for (let i = 0; i < 25; i++) {
-          sortedMap.del(randRecs[i].key);
+          sortedMap.del(randRecs[i].age);
         }
       },
     });
@@ -512,12 +569,12 @@ async.series([
       setup: () => {
         xs = [];
         for (const rec of db) {
-          xs.push({key: rec.key, val: rec.value});
+          xs.push({key: rec.age, val: rec.name});
         }
       },
       fn: () => {
         for (let i = 0; i < 25; i++) {
-          _.remove(xs, {key: randRecs[i].key, val: randRecs[i].name});
+          _.remove(xs, {key: randRecs[i].age, val: randRecs[i].name});
         }
       },
     });
