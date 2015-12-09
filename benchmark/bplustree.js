@@ -8,28 +8,45 @@ const faker = require('faker');
 const BPlusIndex = require('../node_modules/bplus-index/dist/bplus-index');
 const BPlusTree = require('../dist/bplustree');
 const Benchmark = require('benchmark');
-const colors = require('colors');
 const async = require('async');
+const colors = require('colors');
+const fs = require('fs');
+const path = require('path');
 import {log} from '../utils/log';
+
+let BPlusTree2;
+
+const fullpath = path.resolve('./dist/oldbplustree.js');
+try {
+  // Query the entry
+  const stats = fs.statSync(fullpath);
+
+  // Is it a directory?
+  if (stats.isFile()) {
+    BPlusTree2 = require('../dist/oldbplustree.js');
+  }
+} catch (e) {
+  log(`old is same as BPlusTree, because ${fullpath} does not exist`);
+  BPlusTree2 = BPlusTree;
+}
 
 Benchmark.support.decompilation = false;
 
 const compileResult = (results) => {
   let text = `
 bplus-index ${results[0].toFixed(2)} ops/sec
-bplustree   ${results[1].toFixed(2)} ops/sec
-array       ${results[2].toFixed(2)} ops/sec\n`;
+  bplustree ${results[1].toFixed(2)} ops/sec
+        old ${results[2].toFixed(2)} ops/sec
+      array ${results[3].toFixed(2)} ops/sec\n`;
 
-  const method = ['bplus-index', 'bplustree', 'array'];
+  const method = ['bplus-index', 'bplustree', 'bplustree-old', 'array'];
   const zip = _.zip(method, results);
   const order = _.sortBy(zip, 1).reverse();
 
   for (let i = 1; i < order.length; i++) {
-    const percentage = ((order[0][1] - order[i][1]) / order[i][1]) * 100;
-    text += colors.green(`${order[0][0]} is ${percentage.toFixed()}% faster than ${order[i][0]}\n`);
+    const percentage = ((order[i - 1][1] - order[i][1]) / order[i][1]) * 100;
+    text += colors.green(`${order[i - 1][0]} is ${percentage.toFixed()}% faster than ${order[i][0]}\n`);
   }
-  const percentage = ((order[method.length - 2][1] - order[method.length - 1][1]) / order[method.length - 1][1]) * 100;
-  text += colors.green(`${order[method.length - 2][0]} is ${percentage.toFixed()}% faster than ${order[method.length - 1][0]}\n`);
 
   return text;
 };
@@ -88,6 +105,18 @@ async.series([
     });
 
     suite.add({
+      name: 'bplustree-old',
+      setup: () => {
+        tree = new BPlusTree2(bf);
+      },
+      fn: () => {
+        for (const rec of db) {
+          tree.store(rec.key, rec.value);
+        }
+      },
+    });
+
+    suite.add({
       name: 'array',
       setup: () => {
         xs = [];
@@ -119,42 +148,58 @@ async.series([
     const results = [];
     const tree = new BPlusIndex({debug: false, branchingFactor: bf});
     const tree2 = new BPlusTree(bf);
+    const tree3 = new BPlusTree2(bf);
     const xs = [];
-    let randKey;
+    const randKeys = _.chain(db).pluck('key').shuffle().value();
 
     for (const rec of db) {
       tree.inject(rec.key, rec.value);
       tree2.store(rec.key, rec.value);
+      tree3.store(rec.key, rec.value);
       xs.push({key: rec.key, val: rec.value});
     }
 
     suite.add({
       name: 'bplus-index',
       setup: () => {
-        randKey = db[_.random(0, dbSize - 1)].key;
       },
       fn: () => {
-        tree.get(randKey);
+        for (let i = 0; i < 25; i++) {
+          tree.get(randKeys[i]);
+        }
       },
     });
 
     suite.add({
       name: 'bplustree',
       setup: () => {
-        randKey = db[_.random(0, dbSize - 1)].key;
       },
       fn: () => {
-        tree2.fetch(randKey);
+        for (let i = 0; i < 25; i++) {
+          tree2.fetch(randKeys[i]);
+        }
+      },
+    });
+
+    suite.add({
+      name: 'bplustree-old',
+      setup: () => {
+      },
+      fn: () => {
+        for (let i = 0; i < 25; i++) {
+          tree3.fetch(randKeys[i]);
+        }
       },
     });
 
     suite.add({
       name: 'array',
       setup: () => {
-        randKey = db[_.random(0, dbSize - 1)].key;
       },
       fn: () => {
-        _.filter(xs, {key: randKey});
+        for (let i = 0; i < 25; i++) {
+          _.filter(xs, {key: randKeys[i]});
+        }
       },
     });
 
@@ -178,11 +223,13 @@ async.series([
     const results = [];
     const tree = new BPlusIndex({debug: false, branchingFactor: bf});
     const tree2 = new BPlusTree(bf);
+    const tree3 = new BPlusTree(bf);
     const xs = [];
 
     for (const rec of db) {
       tree.inject(rec.key, rec.value);
       tree2.store(rec.key, rec.value);
+      tree3.store(rec.key, rec.value);
       xs.push({key: rec.key, val: rec.value});
     }
 
@@ -197,6 +244,13 @@ async.series([
       name: 'bplustree',
       fn: () => {
         tree2.repr(false, true);
+      },
+    });
+
+    suite.add({
+      name: 'bplustree-old',
+      fn: () => {
+        tree3.repr(false, true);
       },
     });
 
@@ -227,11 +281,13 @@ async.series([
     const results = [];
     const tree = new BPlusIndex({debug: false, branchingFactor: bf});
     const tree2 = new BPlusTree(bf);
+    const tree3 = new BPlusTree2(bf);
     const xs = [];
 
     for (const rec of db) {
       tree.inject(rec.key, rec.value);
       tree2.store(rec.key, rec.value);
+      tree3.store(rec.key, rec.value);
       xs.push({key: rec.key, val: rec.value});
     }
 
@@ -249,6 +305,13 @@ async.series([
       name: 'bplustree',
       fn: () => {
         tree2.fetchRange(lowerBound, upperBound);
+      },
+    });
+
+    suite.add({
+      name: 'bplustree-old',
+      fn: () => {
+        tree3.fetchRange(lowerBound, upperBound);
       },
     });
 
@@ -282,8 +345,9 @@ async.series([
     const results = [];
     let tree;
     let tree2;
+    let tree3;
     let xs;
-    let randRec;
+    const randRecs = _.shuffle(db);
 
     suite.add({
       name: 'bplus-index',
@@ -292,10 +356,11 @@ async.series([
         for (const rec of db) {
           tree.inject(rec.key, rec.value);
         }
-        randRec = db[_.random(0, dbSize - 1)];
       },
       fn: () => {
-        tree.eject(randRec.key, randRec.name);
+        for (let i = 0; i < 25; i++) {
+          tree.eject(randRecs[i].key, randRecs[i].name);
+        }
       },
     });
 
@@ -306,10 +371,26 @@ async.series([
         for (const rec of db) {
           tree2.store(rec.key, rec.value);
         }
-        randRec = db[_.random(0, dbSize - 1)];
       },
       fn: () => {
-        tree2.remove(randRec.key);
+        for (let i = 0; i < 25; i++) {
+          tree2.remove(randRecs[i].key, randRecs[i].value);
+        }
+      },
+    });
+
+    suite.add({
+      name: 'bplustree-old',
+      setup: () => {
+        tree3 = new BPlusTree2(bf);
+        for (const rec of db) {
+          tree3.store(rec.key, rec.value);
+        }
+      },
+      fn: () => {
+        for (let i = 0; i < 25; i++) {
+          tree3.remove(randRecs[i].key, randRecs[i].value);
+        }
       },
     });
 
@@ -320,10 +401,11 @@ async.series([
         for (const rec of db) {
           xs.push({key: rec.key, val: rec.value});
         }
-        randRec = db[_.random(0, dbSize - 1)];
       },
       fn: () => {
-        _.remove(xs, {key: randRec.key, val: randRec.name});
+        for (let i = 0; i < 25; i++) {
+          _.remove(xs, {key: randRecs[i].key, val: randRecs[i].name});
+        }
       },
     });
 
