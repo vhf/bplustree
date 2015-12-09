@@ -9,7 +9,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var BPlusTree = (function () {
   /**
    * @param {Object} options
-   * @param {number} [options.order=4] - The tree order (or branching factor or node capacity)
+   * @param {number} [options.order=6] - The tree order (or branching factor or node capacity)
    * @param {boolean} [options.debug=false] - Check tree invariants after each insert / remove
    * @param {string} [options.cmpFn=numericComparison] - Comparison function to use
    */
@@ -18,7 +18,7 @@ var BPlusTree = (function () {
     _classCallCheck(this, BPlusTree);
 
     options || (options = {});
-    this.order = options.order || 4;
+    this.order = options.order || 6;
     this.debug = options.debug || false;
     this.cmpFn = options.cmpFn || function (a, b) {
       return a < b ? -1 : a > b ? 1 : 0; // eslint-disable-line

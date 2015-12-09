@@ -15,7 +15,7 @@ const setup = (n) => {
 describe('BPlusTree', () => {
   it('should be created', () => {
     const tree = new BPlusTree({ debug: true });
-    assert.equal(tree.order, 4);
+    assert.equal(tree.order, 6);
     assert.equal(tree.tree.k.length, 0);
     assert.equal(tree.tree.v.length, 0);
   });
