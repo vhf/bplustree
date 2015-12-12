@@ -60,7 +60,9 @@ var BPlusTree = (function () {
             if (options.getKeys) {
               result.push(node.k[i]);
             } else if (options.getValues) {
-              result.push(node.v[i]);
+              result = result.concat(node.v[i].reduce(function (a, b) {
+                return a.concat(b);
+              }, []));
             } else {
               result[node.k[i]] = node.v[i];
             }
