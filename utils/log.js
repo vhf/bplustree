@@ -1,6 +1,6 @@
 const util = require('util');
 
-export function log(...obj) {
+function log(...obj) {
   const result = [];
   for (let i = 0; i < obj.length; i++) {
     if (typeof obj[i] === 'string') {
@@ -11,3 +11,5 @@ export function log(...obj) {
   }
   console.log(...result);
 }
+
+module.exports = log;
