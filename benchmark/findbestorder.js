@@ -38,7 +38,7 @@ const compileResult = (results) => {
 
 for (let i = 0; i < dbSize; i++) {
   const rec = {
-    key: faker.random.number({max: 90}),
+    key: faker.random.number({ max: 90 }),
     value: faker.name.findName(),
   };
   db.push(rec);
@@ -82,7 +82,6 @@ async.series([
     }
 
     suite.on('error', (event) => {
-      throw new Error(event.target.error);
       done(event.target.error);
     });
 
