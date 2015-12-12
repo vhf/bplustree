@@ -1,6 +1,6 @@
 {
   "name": "bplustree",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "test": "mocha --compilers js:babel-core/register --check-leaks test/bplustree.js && npm run build",
     "test-full": "mocha --compilers js:babel-core/register --check-leaks test/bplustree.js test/full.js && npm run build",
