@@ -60,9 +60,7 @@ var BPlusTree = (function () {
             if (options.getKeys) {
               result.push(node.k[i]);
             } else if (options.getValues) {
-              result = result.concat(node.v[i].reduce(function (a, b) {
-                return a.concat(b);
-              }, []));
+              result.push(node.v[i]);
             } else {
               result[node.k[i]] = node.v[i];
             }
@@ -70,10 +68,12 @@ var BPlusTree = (function () {
         }
       }
       walk(this.tree);
+      var out = result.length && Array.isArray(result[0]) ? Array.prototype.concat.apply([], result) : result;
+
       if ((options.getKeys || options.getValues) && options.descending) {
-        return result.reverse();
+        return out.reverse();
       }
-      return result;
+      return out;
     }
 
     /**
@@ -103,7 +103,6 @@ var BPlusTree = (function () {
           leaf = leaf.v[leaf.v.length - 1];
         }
         if (this.cmpFn(lo, leaf.k[leaf.k.length - 1]) === 1) {
-          // use cmpFn here
           return [];
         }
         // ok, now this is REALLY suboptimal (and ugly)
@@ -122,22 +121,16 @@ var BPlusTree = (function () {
       while (leaf.k[index] <= hi) {
         if (this.cmpFn(leaf.k[index], hi) === 0) {
           // if key at current index is upper bound, concat all vals and stop
-          result = result.concat(leaf.v[index]).reduce(function (a, b) {
-            return a.concat(b);
-          }, []);
+          result.push(leaf.v[index]);
           break;
         }
         if (this.cmpFn(leaf.k[leaf.k.length - 1], hi) === 0) {
           // if last key is upper bound, concat all vals and stop
-          result = result.concat(leaf.v.slice(index)).reduce(function (a, b) {
-            return a.concat(b);
-          }, []);
+          result.push(leaf.v.slice(index));
           break;
         } else if (this.cmpFn(leaf.k[leaf.k.length - 1], hi) === -1) {
           // if last key is smaller than upper bound, fetch next leaf and iterate
-          result = result.concat(leaf.v.slice(index)).reduce(function (a, b) {
-            return a.concat(b);
-          }, []);
+          result.push(leaf.v.slice(index));
           if (leaf.n !== null) {
             leaf = this.fetch(leaf.n, { getLeaf: true });
             index = 0;
@@ -148,11 +141,15 @@ var BPlusTree = (function () {
           // if last key is bigger than upper bound, concat until upper bound
           var i = index;
           for (; leaf.k[i] <= hi; i++) {}
-          result = result.concat(leaf.v.slice(0, i)).reduce(function (a, b) {
-            return a.concat(b);
-          }, []);
+          result.push(leaf.v.slice(0, i));
           break;
         }
+      }
+
+      if (Array.isArray(result[0])) {
+        result = Array.prototype.concat.apply([], Array.prototype.concat.apply([], result));
+      } else {
+        result = Array.prototype.concat.apply([], result);
       }
 
       if (options.descending) {
