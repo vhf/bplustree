@@ -113,6 +113,8 @@ describe('BPlusTree', () => {
   it('should repr', () => {
     const tree = setup();
     assert.deepEqual(tree.repr(), { '1': ['z'], '2': ['b'], '3': ['c', 'c2'], '4': ['d'], '5': ['e'], '6': ['f'], '7': ['g'], '8': ['h'], '10': ['m'], '11': ['n'], '12': ['p'] });
+    assert.deepEqual(tree.repr({ getKeys: true }), ['1', '2', '3', '4', '5', '6', '7', '8', '10', '11', '12']);
+    assert.deepEqual(tree.repr({ getValues: true }), ['z', 'b', 'c', 'c2', 'd', 'e', 'f', 'g', 'h', 'm', 'n', 'p']);
   });
 
   it('should remove val', function testWithTimeout() {
