@@ -221,7 +221,7 @@ var BPlusTree = (function () {
 
     /**
      * Fetch the value(s) stored at `key`
-     * @param {*} key
+     * @param {Key} key
      * @param {Object} options
      * @param {BPTree.tree} [options.root=this.tree] - Tree to search in
      * @param {boolean} [options.getLeaf=false] - Return the leaf containing the value(s)
