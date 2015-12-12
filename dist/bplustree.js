@@ -87,39 +87,68 @@ var BPlusTree = (function () {
     key: 'fetchRange',
     value: function fetchRange(lowerBound, upperBound, options) {
       options || (options = {});
+      var hi = upperBound;
+      var lo = lowerBound;
 
       var result = [];
 
-      var leaf = this.fetch(lowerBound, { getLeaf: true });
+      var leaf = this.fetch(lo, { getLeaf: true });
       if (!leaf) {
-        // should we look for a new lowerBound?
-        return [];
+        // look for a new lower bound, which is quite slow
+        // check if lo is bigger than highest key in tree
+        leaf = this.tree;
+        while (leaf.t === 'branch') {
+          leaf = leaf.v[leaf.v.length - 1];
+        }
+        if (this.cmpFn(lo, leaf.k[leaf.k.length - 1]) === 1) {
+          // use cmpFn here
+          return [];
+        }
+        // ok, now this is REALLY suboptimal (and ugly)
+        var keys = this.repr({ getKeys: true });
+        for (var i = 0; i < this.numKeys; i++) {
+          if (this.cmpFn(keys[i], lo) === 1) {
+            lo = keys[i];
+            leaf = this.fetch(lo, { getLeaf: true });
+            break;
+          }
+        }
       }
 
-      var index = leaf.k.indexOf(lowerBound);
+      var index = leaf.k.indexOf(lo);
 
-      while (leaf.k[index] <= upperBound) {
-        if (this.cmpFn(leaf.k[index], upperBound) === 0) {
+      while (leaf.k[index] <= hi) {
+        if (this.cmpFn(leaf.k[index], hi) === 0) {
+          // if key at current index is upper bound, concat all vals and stop
           result = result.concat(leaf.v[index]).reduce(function (a, b) {
             return a.concat(b);
           }, []);
           break;
         }
-        if (this.cmpFn(leaf.k[leaf.k.length - 1], upperBound) === 0) {
-          result = result.concat(leaf.v).reduce(function (a, b) {
-            return a.concat(b);
-          }, []);
-          break;
-        } else if (this.cmpFn(leaf.k[leaf.k.length - 1], upperBound) === -1) {
+        if (this.cmpFn(leaf.k[leaf.k.length - 1], hi) === 0) {
+          // if last key is upper bound, concat all vals and stop
           result = result.concat(leaf.v.slice(index)).reduce(function (a, b) {
             return a.concat(b);
           }, []);
-          leaf = this.fetch(leaf.n, { getLeaf: true });
-          index = 0;
+          break;
+        } else if (this.cmpFn(leaf.k[leaf.k.length - 1], hi) === -1) {
+          // if last key is smaller than upper bound, fetch next leaf and iterate
+          result = result.concat(leaf.v.slice(index)).reduce(function (a, b) {
+            return a.concat(b);
+          }, []);
+          if (leaf.n !== null) {
+            leaf = this.fetch(leaf.n, { getLeaf: true });
+            index = 0;
+          } else {
+            break;
+          }
         } else {
+          // if last key is bigger than upper bound, concat until upper bound
           var i = index;
-          for (; i < leaf.k.length && leaf.k[i] <= upperBound; i++) {}
-          result = result.concat(leaf.k.slice(0, i));
+          for (; leaf.k[i] <= hi; i++) {}
+          result = result.concat(leaf.v.slice(0, i)).reduce(function (a, b) {
+            return a.concat(b);
+          }, []);
           break;
         }
       }
