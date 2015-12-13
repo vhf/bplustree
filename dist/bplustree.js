@@ -38,9 +38,10 @@ var BPlusTree = (function () {
   /**
    * Get a {k1: v1, k2: v2, ...} object representing the stored data
    * @param {Object} options
+   * @param {BPTree.tree} [options.root=this.tree] - Tree to check
    * @param {boolean} [options.getKeys=false] - Instead of an object, get a list of all keys
    * @param {boolean} [options.getValues=false] - Instead of an object, get a list of all values
-   * @param {boolean} [options.descending=false] - Get it reversed (only works if options.keys or options.values)
+   * @param {boolean} [options.descending=false] - Get it reversed (only works if options.getKeys or options.getValues)
    * @return {{keys: values}|Keys[]|Values[]}
    */
 
@@ -48,6 +49,7 @@ var BPlusTree = (function () {
     key: 'repr',
     value: function repr(options) {
       options || (options = {});
+      var tree = options.root || this.tree;
       var result = options.getKeys || options.getValues ? [] : {};
       function walk(node) {
         if (node.t === 'branch') {
@@ -67,7 +69,7 @@ var BPlusTree = (function () {
           }
         }
       }
-      walk(this.tree);
+      walk(tree);
       var out = result.length && Array.isArray(result[0]) ? Array.prototype.concat.apply([], result) : result;
 
       if ((options.getKeys || options.getValues) && options.descending) {
@@ -242,7 +244,9 @@ var BPlusTree = (function () {
         return true;
       }
 
-      assert(this.repr({ getKeys: true }).length === this.numKeys, 'leaf count does not match');
+      if (!options.root) {
+        assert(this.repr({ getKeys: true }).length === this.numKeys, 'leaf count does not match');
+      }
 
       return checking(this, tree, 0, [], []);
     }
@@ -474,7 +478,7 @@ var BPlusTree = (function () {
         }
       }
       walk(this.tree, 0, []);
-      result = result.sort(function (a, b) {
+      result.sort(function (a, b) {
         return a.length > b.length ? -1 : a.length < b.length ? 1 : 0;
       }); // eslint-disable-line
 
@@ -516,18 +520,12 @@ var BPlusTree = (function () {
         fetched.leaf.v.splice(keyIndex, 1);
         this.numKeys--;
       } else if (val !== undefined) {
-        // key does not contain said val
-        if (valIndex === -1) {
-          return false;
-        }
         // key contains val, but we have other vals, only remove this val
         removed = fetched.leaf.v[keyIndex][valIndex];
         fetched.leaf.v[keyIndex].splice(valIndex, 1);
       } else {
         // key has several vals, we don't remove anything
-        if (valCount > 1) {
-          return false;
-        }
+        return false;
       }
 
       // we lost one val
@@ -556,7 +554,6 @@ var BPlusTree = (function () {
       }
 
       var leafIndex = path[path.length - 1];
-      var noFix = false;
 
       // else borrow
 
@@ -577,7 +574,6 @@ var BPlusTree = (function () {
           });
           parent.v[leafIndex] = leaf;
           parent.v[leafIndex + 1] = rightSibling;
-          noFix = true;
         }
       }
 
@@ -597,7 +593,6 @@ var BPlusTree = (function () {
           });
           parent.v[leafIndex] = leaf;
           parent.v[leafIndex - 1] = leftSibling;
-          noFix = true;
         }
       }
 
@@ -688,9 +683,8 @@ var BPlusTree = (function () {
             }
           }
         }
-        if (!noFix) {
-          this._fixKeys();
-        }
+
+        this._fixKeys();
       }
       return removed.val;
     }
