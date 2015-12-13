@@ -1,9 +1,10 @@
 {
   "name": "bplustree",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "scripts": {
     "test": "mocha --compilers js:babel-core/register --check-leaks test/bplustree.js && npm run build",
-    "test-full": "mocha --compilers js:babel-core/register --check-leaks test/bplustree.js test/full.js && npm run build",
+    "test-full": "mocha --compilers js:babel-core/register --check-leaks test/bplustree.js test/full.js",
+    "test-travis": "npm run build && npm run test-full && npm run coverage-full",
     "coverage": "babel-node node_modules/isparta/bin/isparta cover ./node_modules/mocha/bin/_mocha -- test/bplustree.js",
     "coverage-full": "babel-node node_modules/isparta/bin/isparta cover ./node_modules/mocha/bin/_mocha -- test/bplustree.js test/full.js",
     "doc": "jsdoc lib -d docs",
