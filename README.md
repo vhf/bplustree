@@ -11,4 +11,13 @@ Another JavaScript <a href="https://en.wikipedia.org/wiki/B%2B_tree" target="_bl
 
 `var BPlusTree = require('bplustree');`
 
-# [API / Documentation](https://rawgit.com/vhf/bplustree/master/docs/BPlusTree.html)
+[API / Documentation](https://rawgit.com/vhf/bplustree/master/docs/BPlusTree.html)
+
+# Tests, coverage, etc
+
+- `npm run build` builds the project
+- `npm run test` runs most tests
+- `npm run test-full` runs all tests
+- `npm run coverage` generates most coverage
+- `npm run coverage-full` generates full coverage
+- `npm run doc` generates the jsdoc documentation
