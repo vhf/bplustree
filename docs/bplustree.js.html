@@ -56,14 +56,16 @@ class BPlusTree {
   /**
    * Get a {k1: v1, k2: v2, ...} object representing the stored data
    * @param {Object} options
+   * @param {BPTree.tree} [options.root=this.tree] - Tree to check
    * @param {boolean} [options.getKeys=false] - Instead of an object, get a list of all keys
    * @param {boolean} [options.getValues=false] - Instead of an object, get a list of all values
-   * @param {boolean} [options.descending=false] - Get it reversed (only works if options.keys or options.values)
+   * @param {boolean} [options.descending=false] - Get it reversed (only works if options.getKeys or options.getValues)
    * @return {{keys: values}|Keys[]|Values[]}
    */
   repr(options) {
     options || (options = {});
-    let result = (options.getKeys || options.getValues) ? [] : {};
+    const tree = options.root || this.tree;
+    const result = (options.getKeys || options.getValues) ? [] : {};
     function walk(node) {
       if (node.t === 'branch') {
         const kids = node.v;
@@ -75,18 +77,21 @@ class BPlusTree {
           if (options.getKeys) {
             result.push(node.k[i]);
           } else if (options.getValues) {
-            result = result.concat(node.v[i].reduce((a, b) => a.concat(b), []));
+            result.push(node.v[i]);
           } else {
             result[node.k[i]] = node.v[i];
           }
         }
       }
     }
-    walk(this.tree);
+    walk(tree);
+    const out = (result.length &amp;&amp; Array.isArray(result[0])) ?
+      Array.prototype.concat.apply([], result) : result;
+
     if ((options.getKeys || options.getValues) &amp;&amp; options.descending) {
-      return result.reverse();
+      return out.reverse();
     }
-    return result;
+    return out;
   }
 
   /**
@@ -111,7 +116,7 @@ class BPlusTree {
       while (leaf.t === 'branch') {
         leaf = leaf.v[leaf.v.length - 1];
       }
-      if (this.cmpFn(lo, leaf.k[leaf.k.length - 1]) === 1) { // use cmpFn here
+      if (this.cmpFn(lo, leaf.k[leaf.k.length - 1]) === 1) {
         return [];
       }
       // ok, now this is REALLY suboptimal (and ugly)
@@ -130,16 +135,16 @@ class BPlusTree {
     while (leaf.k[index] &lt;= hi) {
       if (this.cmpFn(leaf.k[index], hi) === 0) {
         // if key at current index is upper bound, concat all vals and stop
-        result = result.concat(leaf.v[index]).reduce((a, b) => a.concat(b), []);
+        result.push(leaf.v[index]);
         break;
       }
       if (this.cmpFn(leaf.k[leaf.k.length - 1], hi) === 0) {
         // if last key is upper bound, concat all vals and stop
-        result = result.concat(leaf.v.slice(index)).reduce((a, b) => a.concat(b), []);
+        result.push(leaf.v.slice(index));
         break;
       } else if (this.cmpFn(leaf.k[leaf.k.length - 1], hi) === -1) {
         // if last key is smaller than upper bound, fetch next leaf and iterate
-        result = result.concat(leaf.v.slice(index)).reduce((a, b) => a.concat(b), []);
+        result.push(leaf.v.slice(index));
         if (leaf.n !== null) {
           leaf = this.fetch(leaf.n, { getLeaf: true });
           index = 0;
@@ -150,9 +155,15 @@ class BPlusTree {
         // if last key is bigger than upper bound, concat until upper bound
         let i = index;
         for (; leaf.k[i] &lt;= hi; i++);
-        result = result.concat(leaf.v.slice(0, i)).reduce((a, b) => a.concat(b), []);
+        result.push(leaf.v.slice(0, i));
         break;
       }
+    }
+
+    if (Array.isArray(result[0])) {
+      result = Array.prototype.concat.apply([], Array.prototype.concat.apply([], result));
+    } else {
+      result = Array.prototype.concat.apply([], result);
     }
 
     if (options.descending) {
@@ -239,7 +250,9 @@ class BPlusTree {
       return true;
     }
 
-    assert(this.repr({ getKeys: true }).length === this.numKeys, 'leaf count does not match');
+    if (!options.root) {
+      assert(this.repr({ getKeys: true }).length === this.numKeys, 'leaf count does not match');
+    }
 
     return checking(this, tree, 0, [], []);
   }
@@ -422,7 +435,7 @@ class BPlusTree {
   }
 
   _fixKeys() {
-    let result = [];
+    const result = [];
     function walk(node, depth, path) {
       if (node.t === 'branch') {
         const kids = node.v;
@@ -436,7 +449,7 @@ class BPlusTree {
       }
     }
     walk(this.tree, 0, []);
-    result = result.sort((a, b) => (a.length > b.length) ? -1 : ((a.length &lt; b.length) ? 1 : 0)); // eslint-disable-line
+    result.sort((a, b) => (a.length > b.length) ? -1 : ((a.length &lt; b.length) ? 1 : 0)); // eslint-disable-line
 
     result.forEach((path) => {
       const sub = this._get(path);
@@ -475,18 +488,12 @@ class BPlusTree {
       fetched.leaf.v.splice(keyIndex, 1);
       this.numKeys--;
     } else if (val !== undefined) {
-      // key does not contain said val
-      if (valIndex === -1) {
-        return false;
-      }
       // key contains val, but we have other vals, only remove this val
       removed = fetched.leaf.v[keyIndex][valIndex];
       fetched.leaf.v[keyIndex].splice(valIndex, 1);
     } else {
       // key has several vals, we don't remove anything
-      if (valCount > 1) {
-        return false;
-      }
+      return false;
     }
 
     // we lost one val
@@ -514,7 +521,6 @@ class BPlusTree {
     }
 
     const leafIndex = path[path.length - 1];
-    let noFix = false;
 
     // else borrow
 
@@ -533,7 +539,6 @@ class BPlusTree {
         parent.k = parent.v.slice(1).map((o) => o.k[0]);
         parent.v[leafIndex] = leaf;
         parent.v[leafIndex + 1] = rightSibling;
-        noFix = true;
       }
     }
 
@@ -551,7 +556,6 @@ class BPlusTree {
         parent.k = parent.v.slice(1).map((o) => o.k[0]);
         parent.v[leafIndex] = leaf;
         parent.v[leafIndex - 1] = leftSibling;
-        noFix = true;
       }
     }
 
@@ -606,8 +610,8 @@ class BPlusTree {
             const leftContent = branchToSplit.v.slice(0, mid);
             const rightContent = branchToSplit.v.slice(mid);
             const childType = parent.t;
-            const left = {t: childType, k: leftContent.slice(1).map((o) => o.k[0]), v: leftContent};
-            const right = {t: childType, k: rightContent.slice(1).map((o) => o.k[0]), v: rightContent};
+            const left = { t: childType, k: leftContent.slice(1).map((o) => o.k[0]), v: leftContent };
+            const right = { t: childType, k: rightContent.slice(1).map((o) => o.k[0]), v: rightContent };
             parent.v.splice.apply(parent.v, [splitIndex, 1].concat([left, right]));
           }
         }
@@ -620,8 +624,8 @@ class BPlusTree {
           const mid = this.minKeys;
           const leftContent = this.tree.v[index].v.slice(0, mid);
           const rightContent = this.tree.v[index].v.slice(mid);
-          const left = {t: 'branch', k: [leftContent[leftContent.length - 1].k[0]], v: leftContent};
-          const right = {t: 'branch', k: [rightContent[rightContent.length - 1].k[0]], v: rightContent};
+          const left = { t: 'branch', k: [leftContent[leftContent.length - 1].k[0]], v: leftContent };
+          const right = { t: 'branch', k: [rightContent[rightContent.length - 1].k[0]], v: rightContent };
           this.tree.t = 'branch';
           this.tree.n = null;
           this.tree.k = [right.v[0].k[0]];
@@ -636,9 +640,8 @@ class BPlusTree {
           }
         }
       }
-      if (!noFix) {
-        this._fixKeys();
-      }
+
+      this._fixKeys();
     }
     return removed.val;
   }
@@ -691,7 +694,7 @@ module.exports = BPlusTree;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Dec 12 2015 19:59:49 GMT+0100 (CET)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Dec 13 2015 22:41:00 GMT+0100 (CET)
 </footer>
 
 <script> prettyPrint(); </script>
