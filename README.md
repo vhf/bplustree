@@ -21,3 +21,9 @@ Another JavaScript <a href="https://en.wikipedia.org/wiki/B%2B_tree" target="_bl
 - `npm run coverage` generates most coverage
 - `npm run coverage-full` generates full coverage
 - `npm run doc` generates the jsdoc documentation
+
+# Acknowledgement
+
+- This implementation is based on @darius' work: [bplustree.py](https://github.com/darius/sketchbook/blob/master/trees/bplustrees.py)
+- @tehgeekmeister's notes on [B+ Trees](https://github.com/tehgeekmeister/dadabass/blob/master/notes/b_plus_tree.md) were also very helpful
+- The [`_genGetKeyFn`](https://github.com/vhf/bplustree/blob/9e0192dd8d591a7e1a29370edbe5a119a038e0db/lib/bplustree.js#L374-L379) function is courtesy of @martinmaillard
