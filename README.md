@@ -22,6 +22,14 @@ Another JavaScript <a href="https://en.wikipedia.org/wiki/B%2B_tree" target="_bl
 - `npm run coverage-full` generates full coverage
 - `npm run doc` generates the jsdoc documentation
 
+# Dependencies
+
+None
+
+# License
+
+MIT
+
 # Acknowledgement
 
 - This implementation is based on @darius' work: [bplustree.py](https://github.com/darius/sketchbook/blob/master/trees/bplustrees.py)
