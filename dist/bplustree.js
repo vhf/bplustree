@@ -14,15 +14,24 @@ var BPlusTree = (function () {
    * @param {string} [options.cmpFn=numericComparison] - Comparison function to use
    */
 
-  function BPlusTree(options) {
+  function BPlusTree() {
+    var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+    var _ref$order = _ref.order;
+    var order = _ref$order === undefined ? 6 : _ref$order;
+    var _ref$debug = _ref.debug;
+    var debug = _ref$debug === undefined ? false : _ref$debug;
+    var _ref$cmpFn = _ref.cmpFn;
+    var cmpFn = _ref$cmpFn === undefined ? function (a, b) {
+      return a < b ? -1 : a > b ? 1 : 0;
+    } : _ref$cmpFn;
+
     _classCallCheck(this, BPlusTree);
 
-    options || (options = {});
-    this.order = options.order || 6;
-    this.debug = options.debug || false;
-    this.cmpFn = options.cmpFn || function (a, b) {
-      return a < b ? -1 : a > b ? 1 : 0; // eslint-disable-line
-    };
+    // eslint-disable-line
+    this.order = order;
+    this.debug = debug;
+    this.cmpFn = cmpFn;
 
     if (this.order % 2 !== 0 || this.order < 4) {
       throw new Error('order must be even and greater than 4');
@@ -47,10 +56,20 @@ var BPlusTree = (function () {
 
   _createClass(BPlusTree, [{
     key: 'repr',
-    value: function repr(options) {
-      options || (options = {});
-      var tree = options.root || this.tree;
-      var result = options.getKeys || options.getValues ? [] : {};
+    value: function repr() {
+      var _ref2 = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+      var _ref2$root = _ref2.root;
+      var root = _ref2$root === undefined ? this.tree : _ref2$root;
+      var _ref2$getKeys = _ref2.getKeys;
+      var getKeys = _ref2$getKeys === undefined ? false : _ref2$getKeys;
+      var _ref2$getValues = _ref2.getValues;
+      var getValues = _ref2$getValues === undefined ? false : _ref2$getValues;
+      var _ref2$descending = _ref2.descending;
+      var descending = _ref2$descending === undefined ? false : _ref2$descending;
+
+      var tree = root;
+      var result = getKeys || getValues ? [] : {};
       function walk(node) {
         if (node.t === 'branch') {
           var kids = node.v;
@@ -59,9 +78,9 @@ var BPlusTree = (function () {
           }
         } else if (node.t === 'leaf') {
           for (var i = 0, nkl = node.k.length; i < nkl; i++) {
-            if (options.getKeys) {
+            if (getKeys) {
               result.push(node.k[i]);
-            } else if (options.getValues) {
+            } else if (getValues) {
               result.push(node.v[i]);
             } else {
               result[node.k[i]] = node.v[i];
@@ -72,7 +91,7 @@ var BPlusTree = (function () {
       walk(tree);
       var out = result.length && Array.isArray(result[0]) ? Array.prototype.concat.apply([], result) : result;
 
-      if ((options.getKeys || options.getValues) && options.descending) {
+      if ((getKeys || getValues) && descending) {
         return out.reverse();
       }
       return out;
@@ -89,8 +108,12 @@ var BPlusTree = (function () {
 
   }, {
     key: 'fetchRange',
-    value: function fetchRange(lowerBound, upperBound, options) {
-      options || (options = {});
+    value: function fetchRange(lowerBound, upperBound) {
+      var _ref3 = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+      var _ref3$descending = _ref3.descending;
+      var descending = _ref3$descending === undefined ? false : _ref3$descending;
+
       var hi = upperBound;
       var lo = lowerBound;
 
@@ -154,7 +177,7 @@ var BPlusTree = (function () {
         result = Array.prototype.concat.apply([], result);
       }
 
-      if (options.descending) {
+      if (descending) {
         result.reverse();
       }
 
@@ -170,9 +193,13 @@ var BPlusTree = (function () {
 
   }, {
     key: 'depth',
-    value: function depth(options) {
-      options || (options = {});
-      var tree = options.root || this.tree;
+    value: function depth() {
+      var _ref4 = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+      var _ref4$root = _ref4.root;
+      var root = _ref4$root === undefined ? this.tree : _ref4$root;
+
+      var tree = root;
       var d = 0;
       while (tree.t === 'branch') {
         tree = tree.v[0];
@@ -190,10 +217,13 @@ var BPlusTree = (function () {
 
   }, {
     key: 'check',
-    value: function check(options) {
-      options || (options = {});
-      var tree = options.root || this.tree;
-      var depth = this.depth({ root: tree });
+    value: function check() {
+      var _ref5 = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+      var _ref5$root = _ref5.root;
+      var root = _ref5$root === undefined ? this.tree : _ref5$root;
+
+      var depth = this.depth({ root: root });
 
       function assert(expr, msg) {
         if (!expr) {
@@ -244,11 +274,7 @@ var BPlusTree = (function () {
         return true;
       }
 
-      if (!options.root) {
-        assert(this.repr({ getKeys: true }).length === this.numKeys, 'leaf count does not match');
-      }
-
-      return checking(this, tree, 0, [], []);
+      return checking(this, root, 0, [], []);
     }
 
     /**
@@ -263,9 +289,17 @@ var BPlusTree = (function () {
 
   }, {
     key: 'fetch',
-    value: function fetch(key, options) {
-      options || (options = {});
-      var node = options.root || this.tree;
+    value: function fetch(key) {
+      var _ref6 = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+      var _ref6$root = _ref6.root;
+      var root = _ref6$root === undefined ? this.tree : _ref6$root;
+      var _ref6$getLeaf = _ref6.getLeaf;
+      var getLeaf = _ref6$getLeaf === undefined ? false : _ref6$getLeaf;
+      var _ref6$getPath = _ref6.getPath;
+      var getPath = _ref6$getPath === undefined ? false : _ref6$getPath;
+
+      var node = root;
 
       var index = undefined;
       var path = [];
@@ -288,10 +322,10 @@ var BPlusTree = (function () {
       for (var j = 0, kl = node.k.length; j < kl; j++) {
         if (this.cmpFn(key, node.k[j]) === 0) {
           var val = node.v[j];
-          if (options.getPath) {
+          if (getPath) {
             return { val: val, leaf: node, path: path };
           }
-          if (options.getLeaf) {
+          if (getLeaf) {
             return node;
           }
           return val;
