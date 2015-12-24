@@ -1,12 +1,13 @@
 {
   "name": "bplustree",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "scripts": {
     "test": "mocha --compilers js:babel-core/register --check-leaks test/bplustree.js && npm run build",
     "test-full": "mocha --compilers js:babel-core/register --check-leaks test/bplustree.js test/full.js",
     "test-travis": "npm run build && npm run test-full && npm run coverage-full",
     "coverage": "babel-node node_modules/isparta/bin/isparta cover ./node_modules/mocha/bin/_mocha -- test/bplustree.js",
     "coverage-full": "babel-node node_modules/isparta/bin/isparta cover ./node_modules/mocha/bin/_mocha -- test/bplustree.js test/full.js",
+    "coveralls": "npm run coverage-full && cat ./coverage/lcov.info | coveralls",
     "doc": "jsdoc lib -d docs",
     "build": "babel lib -d dist"
   },
@@ -15,11 +16,13 @@
     "babel-core": "^6.3.15",
     "babel-eslint": "^4.1.6",
     "babel-preset-es2015": "^6.3.13",
+    "coveralls": "^2.11.6",
     "eslint": "^1.10.3",
     "eslint-config-airbnb": "^2.0.0",
     "eslint-plugin-react": "^3.11.3",
     "isparta": "^4.0.0",
-    "mocha": "^2.3.4"
+    "mocha": "^2.3.4",
+    "mocha-lcov-reporter": "^1.0.0"
   },
   "description": "B+ tree",
   "main": "dist/bplustree.js",
