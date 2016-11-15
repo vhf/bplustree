@@ -199,7 +199,7 @@ var BPlusTree = function () {
      * @param {boolean} [options.target] - Stop generating when this value is found.
      * @param {number} [options.limit] - Generate at max this number of values.
      * @param {string} [options.keyNotFound] - See `notFound` of `BPlusTree.fetch`
-     * @return {Generator}
+     * @return {Generator} - e.g. `{ value: { k: 6, v: ['f', 'g'] }, done: false }`
      */
 
   }, {
