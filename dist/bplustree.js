@@ -1,7 +1,5 @@
 'use strict';
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 require('regenerator-runtime/runtime');
@@ -212,7 +210,7 @@ var BPlusTree = function () {
           limit = _ref4$limit === undefined ? Infinity : _ref4$limit,
           keyNotFound = _ref4.keyNotFound;
 
-      var returned, leaf, i, length, remainder;
+      var returned, leaf, index, i, length, remainder;
       return regeneratorRuntime.wrap(function values$(_context) {
         while (1) {
           switch (_context.prev = _context.next) {
@@ -220,7 +218,7 @@ var BPlusTree = function () {
               returned = 0;
               leaf = void 0;
 
-              if ((typeof key === 'undefined' ? 'undefined' : _typeof(key)) === undefined) {
+              if (typeof key === 'undefined') {
                 key = -Infinity;
                 keyNotFound = 'right';
               }
@@ -239,9 +237,14 @@ var BPlusTree = function () {
                 break;
               }
 
-              i = 0;
+              index = leaf.k.indexOf(key);
 
-            case 8:
+              if (index === -1) {
+                index = 0;
+              }
+              i = index;
+
+            case 10:
               if (!(i < leaf.v.length)) {
                 _context.next = 26;
                 break;
@@ -259,18 +262,14 @@ var BPlusTree = function () {
               remainder = length - (returned - limit);
 
               if (!(remainder >= 0)) {
-                _context.next = 15;
+                _context.next = 17;
                 break;
               }
 
               return _context.abrupt('return', leaf.v[i].slice(0, remainder));
 
-            case 15:
-              _context.next = 17;
-              return leaf.v[i];
-
             case 17:
-              if (!(target && leaf.v[i].indexOf(target) !== -1)) {
+              if (!(target === leaf.v[i][0])) {
                 _context.next = 19;
                 break;
               }
@@ -291,7 +290,7 @@ var BPlusTree = function () {
 
             case 23:
               i++;
-              _context.next = 8;
+              _context.next = 10;
               break;
 
             case 26:
