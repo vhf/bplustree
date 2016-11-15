@@ -4,7 +4,7 @@ const assert = require('assert');
 
 const setup = (n) => {
   const tree = new BPlusTree({ order: 4, debug: true });
-  const data = [[1, 'z'], [2, 'b'], [3, 'c'], [3, 'c2'], [4, 'd'], [5, 'e'], [6, 'f'], [7, 'g'], [8, 'h'], [10, 'm'], [11, 'n'], [12, 'p']];
+  const data = [[1, 'z'], [2, 'b'], [3, 'c'], [3, 'c2'], [4, 'd'], [5, 'e'], [6, 'f'], [6, 'g'], [8, 'h'], [10, 'm'], [11, 'n'], [12, 'p']];
   for (let i = 0; i < ((n || n > data.length ? data.length : n) || data.length); i++) {
     tree.store(data[i][0], data[i][1]);
   }
@@ -63,15 +63,30 @@ describe('BPlusTree', () => {
     assert.deepEqual(tree.fetch(3), ['c', 'c2']);
     assert.deepEqual(tree.fetch(4), ['d']);
     assert.deepEqual(tree.fetch(5), ['e']);
-    assert.deepEqual(tree.fetch(6), ['f']);
-    assert.deepEqual(tree.fetch(7), ['g']);
-    assert.equal(tree.fetch(300), false);
+    assert.deepEqual(tree.fetch(6), ['f', 'g']);
+    assert.deepEqual(tree.fetch(7), false);
     assert.deepEqual(tree.fetch(8), ['h']);
     assert.deepEqual(tree.fetch(10), ['m']);
     assert.deepEqual(tree.fetch(11), ['n']);
     assert.deepEqual(tree.fetch(12), ['p']);
-    assert.deepEqual(tree.fetch(12, { getLeaf: true }), { t: 'leaf', k: [10, 11, 12], v: [['m'], ['n'], ['p']], n: null });
-    assert.deepEqual(tree.fetch(12, { getLeaf: true, root: tree.fetch(11, { getLeaf: true }) }), { t: 'leaf', k: [10, 11, 12], v: [['m'], ['n'], ['p']], n: null });
+  });
+
+  it('should fetch leaf', () => {
+    const tree = setup();
+    assert.deepEqual(tree.fetch(12, { getLeaf: true }), { t: 'leaf', k: [11, 12], v: [['n'], ['p']], n: null });
+    assert.deepEqual(tree.fetch(12, { getLeaf: true, root: tree.fetch(11, { getLeaf: true }) }), { t: 'leaf', k: [11, 12], v: [['n'], ['p']], n: null });
+  });
+
+  it('should fetch left or right', () => {
+    const tree = setup();
+    assert.deepEqual(tree.fetch(7, { notFound: 'right' }), ['h']);
+    assert.deepEqual(tree.fetch(7, { notFound: 'left' }), ['f', 'g']);
+    assert.deepEqual(tree.fetch(0, { notFound: 'left' }), false);
+    assert.deepEqual(tree.fetch(0, { notFound: 'right' }), ['z']);
+    assert.deepEqual(tree.fetch(-Infinity, { notFound: 'right' }), ['z']);
+    assert.deepEqual(tree.fetch(Infinity, { notFound: 'left' }), ['p']);
+    assert.deepEqual(tree.fetch(13, { notFound: 'left' }), ['p']);
+    assert.deepEqual(tree.fetch(13, { notFound: 'right' }), false);
   });
 
   it('should range', () => {
@@ -115,6 +130,149 @@ describe('BPlusTree', () => {
     assert.deepEqual(tree.fetchRange(4, 20), [2, 3]);
   });
 
+  it('should generate', () => {
+    const tree = setup();
+    let generator;
+    // limit is respected
+    generator = tree.values({ key: 2, targetValue: 'n', limit: 4 });
+    assert.deepEqual(generator.next(), { value: ['z'], done: false });
+    assert.deepEqual(generator.next(), { value: ['b'], done: false });
+    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: true });
+
+    // limit is respected
+    generator = tree.values({ key: 1, limit: 1 });
+    assert.deepEqual(generator.next(), { value: ['z'], done: true });
+
+    // limit is respected
+    generator = tree.values({ key: 1, limit: 2 });
+    assert.deepEqual(generator.next(), { value: ['z'], done: false });
+    assert.deepEqual(generator.next(), { value: ['b'], done: true });
+
+    // limit is respected
+    generator = tree.values({ key: 1, limit: 3 });
+    assert.deepEqual(generator.next(), { value: ['z'], done: false });
+    assert.deepEqual(generator.next(), { value: ['b'], done: false });
+    assert.deepEqual(generator.next(), { value: ['c'], done: true });
+
+    // limit is respected although targetValue isn't found
+    generator = tree.values({ key: 2, targetValue: 'n', limit: 4 });
+    assert.deepEqual(generator.next(), { value: ['z'], done: false });
+    assert.deepEqual(generator.next(), { value: ['b'], done: false });
+    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: true });
+
+    // targetValue is respected before limit is reached
+    generator = tree.values({ key: 2, targetValue: 'n', limit: 10 });
+    assert.deepEqual(generator.next(), { value: ['z'], done: false });
+    assert.deepEqual(generator.next(), { value: ['b'], done: false });
+    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
+    assert.deepEqual(generator.next(), { value: ['d'], done: false });
+    assert.deepEqual(generator.next(), { value: ['e'], done: false });
+    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
+    assert.deepEqual(generator.next(), { value: ['h'], done: false });
+    assert.deepEqual(generator.next(), { value: ['m'], done: true });
+
+    // key doesn't exist: not there
+    // user might want to use `keyNotFound`
+    generator = tree.values({ key: 7, targetValue: 'n', limit: 10 });
+    assert.deepEqual(generator.next(), { value: false, done: true });
+
+    // limit is bigger than the number of remaining values
+    generator = tree.values({ key: 2, targetValue: 'n', limit: 250 });
+    assert.deepEqual(generator.next(), { value: ['z'], done: false });
+    assert.deepEqual(generator.next(), { value: ['b'], done: false });
+    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
+    assert.deepEqual(generator.next(), { value: ['d'], done: false });
+    assert.deepEqual(generator.next(), { value: ['e'], done: false });
+    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
+    assert.deepEqual(generator.next(), { value: ['h'], done: false });
+    assert.deepEqual(generator.next(), { value: ['m'], done: false });
+    assert.deepEqual(generator.next(), { value: ['n'], done: false });
+    assert.deepEqual(generator.next(), { value: ['p'], done: true });
+
+    // targetValue not found, generate until the end
+    generator = tree.values({ key: 2, targetValue: 'z' });
+    assert.deepEqual(generator.next(), { value: ['z'], done: false });
+    assert.deepEqual(generator.next(), { value: ['b'], done: false });
+    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
+    assert.deepEqual(generator.next(), { value: ['d'], done: false });
+    assert.deepEqual(generator.next(), { value: ['e'], done: false });
+    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
+    assert.deepEqual(generator.next(), { value: ['h'], done: false });
+    assert.deepEqual(generator.next(), { value: ['m'], done: false });
+    assert.deepEqual(generator.next(), { value: ['n'], done: false });
+    assert.deepEqual(generator.next(), { value: ['p'], done: true });
+
+    // targetValue not found, generate until the end
+    generator = tree.values({ key: 8, targetValue: 'z' });
+    assert.deepEqual(generator.next(), { value: ['h'], done: false });
+    assert.deepEqual(generator.next(), { value: ['m'], done: false });
+    assert.deepEqual(generator.next(), { value: ['n'], done: false });
+    assert.deepEqual(generator.next(), { value: ['p'], done: true });
+
+    // targetValue not found, generate until limit
+    generator = tree.values({ key: 2, targetValue: 'z', limit: 10 });
+    assert.deepEqual(generator.next(), { value: ['z'], done: false });
+    assert.deepEqual(generator.next(), { value: ['b'], done: false });
+    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
+    assert.deepEqual(generator.next(), { value: ['d'], done: false });
+    assert.deepEqual(generator.next(), { value: ['e'], done: false });
+    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
+    assert.deepEqual(generator.next(), { value: ['h'], done: false });
+    assert.deepEqual(generator.next(), { value: ['m'], done: true });
+
+    // no targetValue
+    generator = tree.values({ key: 1, limit: 10 });
+    assert.deepEqual(generator.next(), { value: ['z'], done: false });
+    assert.deepEqual(generator.next(), { value: ['b'], done: false });
+    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
+    assert.deepEqual(generator.next(), { value: ['d'], done: false });
+    assert.deepEqual(generator.next(), { value: ['e'], done: false });
+    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
+    assert.deepEqual(generator.next(), { value: ['h'], done: false });
+    assert.deepEqual(generator.next(), { value: ['m'], done: true });
+
+    // no limit
+    generator = tree.values({ key: 2, targetValue: 'n' });
+    assert.deepEqual(generator.next(), { value: ['z'], done: false });
+    assert.deepEqual(generator.next(), { value: ['b'], done: false });
+    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
+    assert.deepEqual(generator.next(), { value: ['d'], done: false });
+    assert.deepEqual(generator.next(), { value: ['e'], done: false });
+    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
+    assert.deepEqual(generator.next(), { value: ['h'], done: false });
+    assert.deepEqual(generator.next(), { value: ['m'], done: false });
+    assert.deepEqual(generator.next(), { value: ['n'], done: false });
+    assert.deepEqual(generator.next(), { value: ['p'], done: true });
+
+    // no limit
+    generator = tree.values({ key: 2 });
+    assert.deepEqual(generator.next(), { value: ['z'], done: false });
+    assert.deepEqual(generator.next(), { value: ['b'], done: false });
+    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
+    assert.deepEqual(generator.next(), { value: ['d'], done: false });
+    assert.deepEqual(generator.next(), { value: ['e'], done: false });
+    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
+    assert.deepEqual(generator.next(), { value: ['h'], done: false });
+    assert.deepEqual(generator.next(), { value: ['m'], done: false });
+    assert.deepEqual(generator.next(), { value: ['n'], done: false });
+    assert.deepEqual(generator.next(), { value: ['p'], done: true });
+
+    // no key, assume first key, limit respected
+    generator = tree.values({ targetValue: 'n', limit: 5 });
+    assert.deepEqual(generator.next(), { value: ['n'], done: false });
+    assert.deepEqual(generator.next(), { value: ['p'], done: true });
+
+    // no key, assume first key, targetValue
+    generator = tree.values({ targetValue: 'd', limit: 10 });
+    assert.deepEqual(generator.next(), { value: ['n'], done: false });
+    assert.deepEqual(generator.next(), { value: ['p'], done: true });
+
+    // nothing, generate everything
+    generator = tree.values();
+    assert.deepEqual(generator.next(), { value: ['n'], done: false });
+    assert.deepEqual(generator.next(), { value: ['p'], done: true });
+  });
+
   it('should check', () => {
     const tree = setup();
     assert(tree.check());
@@ -128,8 +286,8 @@ describe('BPlusTree', () => {
 
   it('should repr', () => {
     const tree = setup();
-    assert.deepEqual(tree.repr(), { '1': ['z'], '2': ['b'], '3': ['c', 'c2'], '4': ['d'], '5': ['e'], '6': ['f'], '7': ['g'], '8': ['h'], '10': ['m'], '11': ['n'], '12': ['p'] });
-    assert.deepEqual(tree.repr({ getKeys: true }), ['1', '2', '3', '4', '5', '6', '7', '8', '10', '11', '12']);
+    assert.deepEqual(tree.repr(), { '1': ['z'], '2': ['b'], '3': ['c', 'c2'], '4': ['d'], '5': ['e'], '6': ['f', 'g'], '8': ['h'], '10': ['m'], '11': ['n'], '12': ['p'] });
+    assert.deepEqual(tree.repr({ getKeys: true }), ['1', '2', '3', '4', '5', '6', '8', '10', '11', '12']);
     assert.deepEqual(tree.repr({ getValues: true }), ['z', 'b', 'c', 'c2', 'd', 'e', 'f', 'g', 'h', 'm', 'n', 'p']);
     assert.deepEqual(tree.repr({ getValues: true, descending: true }), ['z', 'b', 'c', 'c2', 'd', 'e', 'f', 'g', 'h', 'm', 'n', 'p'].reverse());
   });
@@ -156,7 +314,7 @@ describe('BPlusTree', () => {
     }
     tree.remove(3, 'c2');
     tree.remove(3, 'c');
-    assert.deepEqual(tree.tree, { t: 'leaf', k: [], v: [], n: null });
+    assert.deepEqual(tree.tree, { t: 'leaf', k: [6], v: [['f', 'g']], n: null });
 
     tree = new BPlusTree({ order: 4, debug: true });
     vals = [[3, 'iay'], [93, 'pvm'], [43, 'nki'], [26, 'vqc'], [29, 'gxq'], [86, 'ntf'], [172, 'guy'], [4, 'hxr'], [168, 'ojh'], [226, 'slb'], [46, 'god'], [283, 'vvj'], [126, 'qux'], [221, 'ctu'], [74, 'kvm'], [161, 'qwa'], [34, 'omk'], [115, 'eam'], [276, 'fqv'], [178, 'wcd'], [284, 'wpo'], [264, 'eya'], [200, 'jrk'], [110, 'xhs'], [100, 'spg'], [21, 'ycz'], [184, 'uix'], [220, 'wvp'], [37, 'arl'], [27, 'tdx'], [77, 'xkh'], [114, 'rrj'], [210, 'sud'], [82, 'uyg'], [256, 'jsd'], [248, 'hxa'], [6, 'vhh'], [184, 'oiv'], [247, 'duh'], [86, 'bci'], [26, 'czh'], [151, 'qlo'], [151, 'qte'], [238, 'par'], [275, 'tap'], [45, 'ksn'], [32, 'ukw'], [208, 'wgv'], [4, 'rua'], [267, 'cly'], [207, 'kcx'], [134, 'jcq'], [238, 'jtr'], [171, 'nvp'], [140, 'kdp'], [87, 'tni'], [21, 'sof'], [156, 'vae'], [167, 'nfo'], [253, 'apl'], [123, 'vgs'], [146, 'upk'], [288, 'yxn'], [76, 'ysy'], [141, 'fzd'], [230, 'doi'], [133, 'rna'], [108, 'pxq'], [231, 'gux'], [27, 'rdu'], [283, 'jyz'], [153, 'wdc'], [224, 'ucn'], [209, 'nuv'], [101, 'dpc'], [262, 'hyk'], [193, 'mlw'], [192, 'ynh'], [108, 'xkm'], [252, 'ivm'], [68, 'gka'], [72, 'hyb'], [106, 'pwz'], [289, 'dxi'], [107, 'tyl'], [48, 'kvr'], [200, 'uew'], [82, 'afj'], [281, 'ccd'], [78, 'inh'], [176, 'irb'], [48, 'ncp'], [16, 'cmc'], [238, 'jxz'], [239, 'icn'], [26, 'dpx'], [146, 'mac'], [196, 'ola'], [269, 'uls'], [93, 'zxs'], [219, 'mng'], [245, 'nok'], [153, 'nty'], [167, 'ukx'], [239, 'uxw'], [272, 'aen'], [91, 'col'], [236, 'xwr'], [55, 'gtm'], [213, 'fhd'], [99, 'ryk'], [122, 'xza'], [79, 'clo'], [241, 'lci'], [225, 'rfc'], [245, 'gvw'], [154, 'ixu'], [9, 'emv'], [98, 'ltk'], [179, 'aex'], [191, 'cdf'], [71, 'pvt'], [136, 'izb'], [260, 'bfr'], [30, 'tmd'], [99, 'ora'], [128, 'ugh'], [245, 'qjx'], [125, 'byc'], [152, 'bgy'], [165, 'osp'], [64, 'mue'], [2, 'fzh'], [79, 'qkk'], [223, 'nen'], [150, 'djt'], [32, 'dfb'], [261, 'fqz'], [133, 'ufc'], [33, 'yzl'], [63, 'ilp'], [193, 'iln'], [178, 'vfi'], [111, 'xxc'], [112, 'tfu'], [155, 'uzy'], [43, 'qad'], [251, 'myp'], [200, 'ljl'], [229, 'egb'], [45, 'itf'], [107, 'hmh'], [212, 'udv'], [149, 'nir'], [234, 'ckg'], [210, 'cmg'], [12, 'ysl'], [48, 'hgz'], [269, 'iws'], [168, 'pji'], [236, 'ujs'], [199, 'mqi'], [125, 'nta'], [121, 'xjj'], [61, 'guw'], [108, 'rmb'], [81, 'goh'], [118, 'skg'], [93, 'hcm'], [216, 'uxq'], [79, 'hds'], [281, 'ynj'], [107, 'qul'], [237, 'kis'], [42, 'nie'], [14, 'igo'], [188, 'oyb'], [133, 'cit'], [166, 'ijq'], [265, 'qpm'], [131, 'fao'], [170, 'myo'], [94, 'yzp'], [176, 'aqt'], [141, 'ybd'], [57, 'jpa'], [208, 'vmc'], [71, 'hna'], [100, 'cqe'], [189, 'qwg'], [218, 'epa'], [115, 'jxr'], [46, 'std'], [158, 'tvg'], [232, 'hbj'], [134, 'ayy'], [1, 'fqv'], [251, 'qem'], [185, 'qji'], [214, 'byt'], [144, 'ygv'], [260, 'rzy'], [142, 'azv'], [157, 'zkl'], [49, 'pif'], [205, 'lhg'], [181, 'puv'], [127, 'bmc'], [239, 'zzy'], [270, 'abj'], [266, 'dbz'], [290, 'wpd'], [84, 'rnq'], [76, 'fsv'], [144, 'qil'], [34, 'erw'], [109, 'gyx'], [126, 'lgd'], [271, 'sjy'], [276, 'dlx'], [12, 'rin'], [51, 'uml'], [189, 'zcb'], [172, 'fyp'], [286, 'dnz'], [33, 'aip'], [13, 'fmz'], [32, 'yuk'], [67, 'ifv'], [277, 'krn'], [179, 'irb'], [275, 'uqh'], [159, 'swv'], [203, 'wvx'], [146, 'okt'], [166, 'icm'], [148, 'jcm'], [196, 'kll'], [99, 'cgc'], [223, 'lvw'], [159, 'red'], [29, 'due'], [124, 'mat'], [32, 'ywm'], [123, 'kvc'], [164, 'cmo'], [26, 'gsk'], [83, 'zqm'], [210, 'cza'], [248, 'pgv'], [120, 'sha'], [19, 'jix'], [126, 'pql'], [177, 'rvn'], [280, 'jui'], [208, 'hxk'], [83, 'eui'], [236, 'gld'], [232, 'hpg'], [162, 'srr'], [232, 'zgu'], [35, 'uqe'], [121, 'gwv'], [173, 'rsu'], [67, 'brw'], [38, 'dti'], [282, 'bde'], [262, 'cmw'], [235, 'hyj'], [240, 'rhk'], [232, 'zdd'], [111, 'nja'], [24, 'pvr'], [230, 'gzx'], [232, 'zyn'], [248, 'wwz'], [17, 'apz'], [84, 'dtz'], [81, 'pkp'], [179, 'puy'], [93, 'ywo'], [40, 'bzg'], [109, 'jzn'], [67, 'boy'], [224, 'ccb'], [285, 'bqu'], [8, 'udi'], [200, 'aog'], [214, 'zms'], [171, 'hkj']];

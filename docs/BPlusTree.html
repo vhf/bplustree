@@ -287,7 +287,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line2">line 2</a>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line4">line 4</a>
     </li></ul></dd>
     
 
@@ -505,7 +505,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line165">line 165</a>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line223">line 223</a>
     </li></ul></dd>
     
 
@@ -727,7 +727,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line149">line 149</a>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line207">line 207</a>
     </li></ul></dd>
     
 
@@ -780,14 +780,17 @@
 
     
 
-    <h4 class="name" id="fetch"><span class="type-signature"></span>fetch<span class="signature">(key, options)</span><span class="type-signature"> &rarr; {Value|Array.&lt;Value>|Leaf|Object}</span></h4>
+    <h4 class="name" id="fetch"><span class="type-signature"></span>fetch<span class="signature">(key, options)</span><span class="type-signature"> &rarr; {Value|Array.&lt;Value>|Leaf|Object|Boolean}</span></h4>
 
     
 
 
 
 <div class="description">
-    Fetch the value(s) stored at `key`
+    Fetch the value(s) stored at `key`.
+- `getLeaf` returns the whole leaf
+- `getPath` returns the path from the root to this leaf
+- when defined, `notFound` can be either 'left' or 'right', it controls which key to return when it wasn't found
 </div>
 
 
@@ -1006,6 +1009,45 @@
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>notFound</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    left|right
+                
+                </td>
+            
+
+            <td class="description last">Return what was found left or right from key which doesn't exist</td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -1050,7 +1092,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line229">line 229</a>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line291">line 291</a>
     </li></ul></dd>
     
 
@@ -1094,6 +1136,9 @@
 |
 
 <span class="param-type">Object</span>
+|
+
+<span class="param-type">Boolean</span>
 
 
     </dd>
@@ -1323,7 +1368,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line73">line 73</a>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line75">line 75</a>
     </li></ul></dd>
     
 
@@ -1519,7 +1564,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line614">line 614</a>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line697">line 697</a>
     </li></ul></dd>
     
 
@@ -1858,7 +1903,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line34">line 34</a>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line36">line 36</a>
     </li></ul></dd>
     
 
@@ -2036,7 +2081,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line346">line 346</a>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line429">line 429</a>
     </li></ul></dd>
     
 
@@ -2085,6 +2130,323 @@
 
 
         
+            
+
+    
+
+    <h4 class="name" id="values"><span class="type-signature"></span>values<span class="signature">(options)</span><span class="type-signature"> &rarr; {Generator}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Tree values generator. It will start generating values from a certain key
+until the end of the tree OR until `target` is found OR until `limit`
+is reached OR until there are no elements anymore.
+
+In other words:
+- if `target` is found before `limit`, it'll stop
+- if `limit` is reached before `target` was found, it'll stop
+- `target` and `limit` are both optional: use none of them, one of them, or both
+- `keyNotFound` is optional, it lets you decide which key to prefer when the key is not found
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>key</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Key</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Key at which to start generating.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>target</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Stop generating when this value is found.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>limit</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Generate at max this number of values.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>keyNotFound</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">See `notFound` of `BPlusTree.fetch`</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line162">line 162</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Generator</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
     
 
     
@@ -2106,7 +2468,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Dec 19 2015 14:25:49 GMT+0100 (CET)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Tue Nov 15 2016 22:33:29 GMT+0100 (CET)
 </footer>
 
 <script> prettyPrint(); </script>

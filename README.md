@@ -3,13 +3,24 @@
 
 Another JavaScript <a href="https://en.wikipedia.org/wiki/B%2B_tree" target="_blank">B+ tree</a> implementation.
 
+# Features
+
+* Insert
+* Delete
+* Fetch
+* Fetch ranges
+* Fetch as generator
+* Check tree invariants
+
 # Installation
 
 `npm install bplustree`
 
-# Usage
+# Very Basic Usage (useless)
 
-`var BPlusTree = require('bplustree');`
+`const BPlusTree = require('bplustree');`
+
+# Much Better Documentation (useful)
 
 [API / Documentation](https://rawgit.com/vhf/bplustree/master/docs/BPlusTree.html)
 
@@ -21,10 +32,6 @@ Another JavaScript <a href="https://en.wikipedia.org/wiki/B%2B_tree" target="_bl
 - `npm run coverage` generates most coverage
 - `npm run coverage-full` generates full coverage
 - `npm run doc` generates the jsdoc documentation
-
-# Dependencies
-
-None
 
 # License
 
