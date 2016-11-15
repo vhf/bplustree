@@ -30,7 +30,7 @@
     
         <h2>BPlusTree</h2>
         
-            <div class="class-description">Class representing a B+ Tree.</div>
+            <div class="class-description"><p>Class representing a B+ Tree.</p></div>
         
     
 </header>
@@ -161,7 +161,7 @@
                 </td>
             
 
-            <td class="description last">The tree order (or branching factor or node capacity)</td>
+            <td class="description last"><p>The tree order (or branching factor or node capacity)</p></td>
         </tr>
 
     
@@ -200,7 +200,7 @@
                 </td>
             
 
-            <td class="description last">Check tree invariants after each insert / remove</td>
+            <td class="description last"><p>Check tree invariants after each insert / remove</p></td>
         </tr>
 
     
@@ -239,7 +239,7 @@
                 </td>
             
 
-            <td class="description last">Comparison function to use</td>
+            <td class="description last"><p>Comparison function to use</p></td>
         </tr>
 
     
@@ -343,7 +343,7 @@
 
 
 <div class="description">
-    Check tree's invariants
+    <p>Check tree invariants</p>
 </div>
 
 
@@ -457,7 +457,7 @@
                 </td>
             
 
-            <td class="description last">Tree to check</td>
+            <td class="description last"><p>Tree to check</p></td>
         </tr>
 
     
@@ -505,7 +505,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line226">line 226</a>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line229">line 229</a>
     </li></ul></dd>
     
 
@@ -532,7 +532,7 @@
 
         
 <div class="param-desc">
-    Returns `true` or throws an `Error()`
+    <p>Returns <code>true</code> or throws an <code>Error()</code></p>
 </div>
 
 
@@ -565,7 +565,7 @@
 
 
 <div class="description">
-    Get tree depth (or height)
+    <p>Get tree depth (or height)</p>
 </div>
 
 
@@ -679,7 +679,7 @@
                 </td>
             
 
-            <td class="description last">Tree to use</td>
+            <td class="description last"><p>Tree to use</p></td>
         </tr>
 
     
@@ -727,7 +727,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line210">line 210</a>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line213">line 213</a>
     </li></ul></dd>
     
 
@@ -754,7 +754,7 @@
 
         
 <div class="param-desc">
-    Computed depth
+    <p>Computed depth</p>
 </div>
 
 
@@ -787,10 +787,12 @@
 
 
 <div class="description">
-    Fetch the value(s) stored at `key`.
-- `getLeaf` returns the whole leaf
-- `getPath` returns the path from the root to this leaf
-- when defined, `notFound` can be either 'left' or 'right', it controls which key to return when it wasn't found
+    <p>Fetch the value(s) stored at <code>key</code>.</p>
+<ul>
+<li><code>getLeaf</code> returns the whole leaf</li>
+<li><code>getPath</code> returns the path from the root to this leaf</li>
+<li>when defined, <code>notFound</code> can be either 'left' or 'right', it controls which key to return when it wasn't found</li>
+</ul>
 </div>
 
 
@@ -927,7 +929,7 @@
                 </td>
             
 
-            <td class="description last">Tree to search in</td>
+            <td class="description last"><p>Tree to search in</p></td>
         </tr>
 
     
@@ -966,7 +968,7 @@
                 </td>
             
 
-            <td class="description last">Return the leaf containing the value(s)</td>
+            <td class="description last"><p>Return the leaf containing the value(s)</p></td>
         </tr>
 
     
@@ -1005,7 +1007,7 @@
                 </td>
             
 
-            <td class="description last">Return {val: value(s), leaf: leaf, path: pathFromRootToLeaf}</td>
+            <td class="description last"><p>Return {val: value(s), leaf: leaf, path: pathFromRootToLeaf}</p></td>
         </tr>
 
     
@@ -1039,12 +1041,10 @@
             
                 <td class="default">
                 
-                    left|right
-                
                 </td>
             
 
-            <td class="description last">Return what was found left or right from key which doesn't exist</td>
+            <td class="description last"><p>either 'left' or 'right' - Return what was found left or right from key which doesn't exist</p></td>
         </tr>
 
     
@@ -1092,7 +1092,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line294">line 294</a>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line299">line 299</a>
     </li></ul></dd>
     
 
@@ -1160,7 +1160,7 @@
 
 
 <div class="description">
-    Get all values between keys `lowerBound` and `upperBound`
+    <p>Get all values between keys <code>lowerBound</code> and <code>upperBound</code></p>
 </div>
 
 
@@ -1320,7 +1320,7 @@
                 </td>
             
 
-            <td class="description last">Get it reversed (only works if options.keys or options.values)</td>
+            <td class="description last"><p>Get it reversed (only works if options.keys or options.values)</p></td>
         </tr>
 
     
@@ -1395,7 +1395,7 @@
 
         
 <div class="param-desc">
-    A flat array of values, or empty array.
+    <p>A flat array of values, or empty array.</p>
 </div>
 
 
@@ -1428,7 +1428,7 @@
 
 
 <div class="description">
-    Remove value from key key, or remove key and its value if key only has one value
+    <p>Remove value from key key, or remove key and its value if key only has one value</p>
 </div>
 
 
@@ -1564,7 +1564,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line700">line 700</a>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line705">line 705</a>
     </li></ul></dd>
     
 
@@ -1591,7 +1591,7 @@
 
         
 <div class="param-desc">
-    The removed value
+    <p>The removed value</p>
 </div>
 
 
@@ -1624,7 +1624,7 @@
 
 
 <div class="description">
-    Get a {k1: v1, k2: v2, ...} object representing the stored data
+    <p>Get a {k1: v1, k2: v2, ...} object representing the stored data</p>
 </div>
 
 
@@ -1738,7 +1738,7 @@
                 </td>
             
 
-            <td class="description last">Tree to check</td>
+            <td class="description last"><p>Tree to check</p></td>
         </tr>
 
     
@@ -1777,7 +1777,7 @@
                 </td>
             
 
-            <td class="description last">Instead of an object, get a list of all keys</td>
+            <td class="description last"><p>Instead of an object, get a list of all keys</p></td>
         </tr>
 
     
@@ -1816,7 +1816,7 @@
                 </td>
             
 
-            <td class="description last">Instead of an object, get a list of all values</td>
+            <td class="description last"><p>Instead of an object, get a list of all values</p></td>
         </tr>
 
     
@@ -1855,7 +1855,7 @@
                 </td>
             
 
-            <td class="description last">Get it reversed (only works if options.getKeys or options.getValues)</td>
+            <td class="description last"><p>Get it reversed (only works if options.getKeys or options.getValues)</p></td>
         </tr>
 
     
@@ -1965,7 +1965,7 @@
 
 
 <div class="description">
-    Insert value at key key
+    <p>Insert value at key key</p>
 </div>
 
 
@@ -2081,7 +2081,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line432">line 432</a>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line437">line 437</a>
     </li></ul></dd>
     
 
@@ -2108,7 +2108,7 @@
 
         
 <div class="param-desc">
-    true
+    <p>true</p>
 </div>
 
 
@@ -2141,15 +2141,16 @@
 
 
 <div class="description">
-    Tree values generator. It will start generating values from a certain key
-until the end of the tree OR until `target` is found OR until `limit`
-is reached OR until there are no elements anymore.
-
-In other words:
-- if `target` is found before `limit`, it'll stop
-- if `limit` is reached before `target` was found, it'll stop
-- `target` and `limit` are both optional: use none of them, one of them, or both
-- `keyNotFound` is optional, it lets you decide which key to prefer when the key is not found
+    <p>Tree values generator. It will start generating values from a certain key
+until the end of the tree OR until <code>target</code> is found OR until <code>limit</code>
+is reached OR until there are no elements anymore.</p>
+<p>In other words:</p>
+<ul>
+<li>if <code>target</code> is found before <code>limit</code>, it'll stop</li>
+<li>if <code>limit</code> is reached before <code>target</code> was found, it'll stop</li>
+<li><code>target</code> and <code>limit</code> are both optional: use none of them, one of them, or both</li>
+<li><code>keyNotFound</code> is optional, it lets you decide which key to prefer when the key is not found</li>
+</ul>
 </div>
 
 
@@ -2255,7 +2256,7 @@ In other words:
 
             
 
-            <td class="description last">Key at which to start generating.</td>
+            <td class="description last"><p>Key at which to start generating.</p></td>
         </tr>
 
     
@@ -2288,7 +2289,7 @@ In other words:
 
             
 
-            <td class="description last">Stop generating when this value is found.</td>
+            <td class="description last"><p>Stop generating when this value is found.</p></td>
         </tr>
 
     
@@ -2321,7 +2322,7 @@ In other words:
 
             
 
-            <td class="description last">Generate at max this number of values.</td>
+            <td class="description last"><p>Generate at max this number of values.</p></td>
         </tr>
 
     
@@ -2354,7 +2355,7 @@ In other words:
 
             
 
-            <td class="description last">See `notFound` of `BPlusTree.fetch`</td>
+            <td class="description last"><p>See <code>notFound</code> of <code>BPlusTree.fetch</code></p></td>
         </tr>
 
     
@@ -2402,7 +2403,7 @@ In other words:
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line162">line 162</a>
+        <a href="bplustree.js.html">bplustree.js</a>, <a href="bplustree.js.html#line164">line 164</a>
     </li></ul></dd>
     
 
@@ -2428,6 +2429,12 @@ In other words:
 <h5>Returns:</h5>
 
         
+<div class="param-desc">
+    <ul>
+<li>e.g. <code>{ value: { k: 6, v: ['f', 'g'] }, done: false }</code></li>
+</ul>
+</div>
+
 
 
 <dl>
@@ -2468,7 +2475,7 @@ In other words:
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Tue Nov 15 2016 23:30:36 GMT+0100 (CET)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Tue Nov 15 2016 23:58:48 GMT+0100 (CET)
 </footer>
 
 <script> prettyPrint(); </script>

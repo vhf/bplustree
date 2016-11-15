@@ -188,10 +188,12 @@ var BPlusTree = function () {
      * is reached OR until there are no elements anymore.
      *
      * In other words:
+     *
      * - if `target` is found before `limit`, it'll stop
      * - if `limit` is reached before `target` was found, it'll stop
      * - `target` and `limit` are both optional: use none of them, one of them, or both
      * - `keyNotFound` is optional, it lets you decide which key to prefer when the key is not found
+     *
      * @param {Object} options
      * @param {Key} [options.key] - Key at which to start generating.
      * @param {boolean} [options.target] - Stop generating when this value is found.
@@ -266,7 +268,7 @@ var BPlusTree = function () {
                 break;
               }
 
-              return _context.abrupt('return', leaf.v[i].slice(0, remainder));
+              return _context.abrupt('return', { k: leaf.k[i], v: leaf.v[i].slice(0, remainder) });
 
             case 17:
               if (!(target === leaf.v[i][0])) {
@@ -274,7 +276,7 @@ var BPlusTree = function () {
                 break;
               }
 
-              return _context.abrupt('return', leaf.v[i]);
+              return _context.abrupt('return', { k: leaf.k[i], v: leaf.v[i] });
 
             case 19:
               if (!(leaf.n === null && i + 1 === leaf.v.length)) {
@@ -282,11 +284,11 @@ var BPlusTree = function () {
                 break;
               }
 
-              return _context.abrupt('return', leaf.v[i]);
+              return _context.abrupt('return', { k: leaf.k[i], v: leaf.v[i] });
 
             case 21:
               _context.next = 23;
-              return leaf.v[i];
+              return { k: leaf.k[i], v: leaf.v[i] };
 
             case 23:
               i++;
@@ -342,7 +344,7 @@ var BPlusTree = function () {
     }
 
     /**
-     * Check tree's invariants
+     * Check tree invariants
      * @param {Object} options
      * @param {BPTree.tree} [options.root=this.tree] - Tree to check
      * @return {boolean} Returns `true` or throws an `Error()`
@@ -411,15 +413,17 @@ var BPlusTree = function () {
 
     /**
      * Fetch the value(s) stored at `key`.
+     *
      * - `getLeaf` returns the whole leaf
      * - `getPath` returns the path from the root to this leaf
      * - when defined, `notFound` can be either 'left' or 'right', it controls which key to return when it wasn't found
+     *
      * @param {Key} key
      * @param {Object} options
      * @param {BPTree.tree} [options.root=this.tree] - Tree to search in
      * @param {boolean} [options.getLeaf=false] - Return the leaf containing the value(s)
      * @param {boolean} [options.getPath=false] - Return {val: value(s), leaf: leaf, path: pathFromRootToLeaf}
-     * @param {string} [options.notFound=left|right] - Return what was found left or right from key which doesn't exist
+     * @param {string} [options.notFound] - either 'left' or 'right' - Return what was found left or right from key which doesn't exist
      * @return {Value|Value[]|Leaf|Object|Boolean}
      */
 

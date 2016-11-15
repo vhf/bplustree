@@ -4,7 +4,20 @@ const assert = require('assert');
 
 const setup = (n) => {
   const tree = new BPlusTree({ order: 4, debug: true });
-  const data = [[1, 'z'], [2, 'b'], [3, 'c'], [3, 'c2'], [4, 'd'], [5, 'e'], [6, 'f'], [6, 'g'], [8, 'h'], [10, 'm'], [11, 'n'], [12, 'p']];
+  const data = [
+    [1, 'z'],
+    [2, 'b'],
+    [3, 'c'],
+    [3, 'c2'],
+    [4, 'd'],
+    [5, 'e'],
+    [6, 'f'],
+    [6, 'g'],
+    [8, 'h'],
+    [10, 'm'],
+    [11, 'n'],
+    [12, 'p']
+  ];
   for (let i = 0; i < ((n || n > data.length ? data.length : n) || data.length); i++) {
     tree.store(data[i][0], data[i][1]);
   }
@@ -135,149 +148,150 @@ describe('BPlusTree', () => {
     let generator;
     // limit is respected
     generator = tree.values({ key: 2, target: 'n', limit: 4 });
-    assert.deepEqual(generator.next(), { value: ['b'], done: false });
-    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
-    assert.deepEqual(generator.next(), { value: ['d'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 3, v: ['c', 'c2'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 4, v: ['d'] }, done: true });
 
     // limit is respected
     generator = tree.values({ key: 1, limit: 1 });
-    assert.deepEqual(generator.next(), { value: ['z'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 1, v: ['z'] }, done: true });
 
     // limit is respected
     generator = tree.values({ key: 1, limit: 2 });
-    assert.deepEqual(generator.next(), { value: ['z'], done: false });
-    assert.deepEqual(generator.next(), { value: ['b'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 1, v: ['z'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b'] }, done: true });
 
     // limit is respected
     generator = tree.values({ key: 1, limit: 3 });
-    assert.deepEqual(generator.next(), { value: ['z'], done: false });
-    assert.deepEqual(generator.next(), { value: ['b'], done: false });
-    assert.deepEqual(generator.next(), { value: ['c'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 1, v: ['z'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 3, v: ['c'] }, done: true });
 
     // limit is respected although target isn't found
     generator = tree.values({ key: 2, target: 'n', limit: 4 });
-    assert.deepEqual(generator.next(), { value: ['b'], done: false });
-    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
-    assert.deepEqual(generator.next(), { value: ['d'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 3, v: ['c', 'c2'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 4, v: ['d'] }, done: true });
 
     // target is respected before limit is reached
     generator = tree.values({ key: 2, target: 'n', limit: 10 });
-    assert.deepEqual(generator.next(), { value: ['b'], done: false });
-    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
-    assert.deepEqual(generator.next(), { value: ['d'], done: false });
-    assert.deepEqual(generator.next(), { value: ['e'], done: false });
-    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
-    assert.deepEqual(generator.next(), { value: ['h'], done: false });
-    assert.deepEqual(generator.next(), { value: ['m'], done: false });
-    assert.deepEqual(generator.next(), { value: ['n'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 3, v: ['c', 'c2'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 4, v: ['d'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 5, v: ['e'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 6, v: ['f', 'g'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 8, v: ['h'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 10, v: ['m'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 11, v: ['n'] }, done: true });
 
     // key doesn't exist: not there
     // user might want to use `keyNotFound`
     generator = tree.values({ key: 7, target: 'n', limit: 10 });
     assert.deepEqual(generator.next(), { value: false, done: true });
+    assert.deepEqual(generator.next(), { value: undefined, done: true });
 
     // limit is bigger than the number of remaining values
     generator = tree.values({ key: 2, target: 'n', limit: 250 });
-    assert.deepEqual(generator.next(), { value: ['b'], done: false });
-    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
-    assert.deepEqual(generator.next(), { value: ['d'], done: false });
-    assert.deepEqual(generator.next(), { value: ['e'], done: false });
-    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
-    assert.deepEqual(generator.next(), { value: ['h'], done: false });
-    assert.deepEqual(generator.next(), { value: ['m'], done: false });
-    assert.deepEqual(generator.next(), { value: ['n'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 3, v: ['c', 'c2'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 4, v: ['d'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 5, v: ['e'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 6, v: ['f', 'g'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 8, v: ['h'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 10, v: ['m'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 11, v: ['n'] }, done: true });
     // continues
     assert.deepEqual(generator.next(), { value: undefined, done: true });
 
     // target not found, generate until the end
     generator = tree.values({ key: 2, target: 'zz' });
-    assert.deepEqual(generator.next(), { value: ['b'], done: false });
-    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
-    assert.deepEqual(generator.next(), { value: ['d'], done: false });
-    assert.deepEqual(generator.next(), { value: ['e'], done: false });
-    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
-    assert.deepEqual(generator.next(), { value: ['h'], done: false });
-    assert.deepEqual(generator.next(), { value: ['m'], done: false });
-    assert.deepEqual(generator.next(), { value: ['n'], done: false });
-    assert.deepEqual(generator.next(), { value: ['p'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 3, v: ['c', 'c2'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 4, v: ['d'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 5, v: ['e'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 6, v: ['f', 'g'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 8, v: ['h'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 10, v: ['m'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 11, v: ['n'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 12, v: ['p'] }, done: true });
 
     // target not found, generate until the end
     generator = tree.values({ key: 8, target: 'zzz' });
-    assert.deepEqual(generator.next(), { value: ['h'], done: false });
-    assert.deepEqual(generator.next(), { value: ['m'], done: false });
-    assert.deepEqual(generator.next(), { value: ['n'], done: false });
-    assert.deepEqual(generator.next(), { value: ['p'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 8, v: ['h'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 10, v: ['m'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 11, v: ['n'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 12, v: ['p'] }, done: true });
 
     // target not found, generate until limit
     generator = tree.values({ key: 2, target: 'z', limit: 10 });
-    assert.deepEqual(generator.next(), { value: ['b'], done: false });
-    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
-    assert.deepEqual(generator.next(), { value: ['d'], done: false });
-    assert.deepEqual(generator.next(), { value: ['e'], done: false });
-    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
-    assert.deepEqual(generator.next(), { value: ['h'], done: false });
-    assert.deepEqual(generator.next(), { value: ['m'], done: false });
-    assert.deepEqual(generator.next(), { value: ['n'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 3, v: ['c', 'c2'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 4, v: ['d'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 5, v: ['e'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 6, v: ['f', 'g'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 8, v: ['h'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 10, v: ['m'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 11, v: ['n'] }, done: true });
 
     // no target
     generator = tree.values({ key: 1, limit: 10 });
-    assert.deepEqual(generator.next(), { value: ['z'], done: false });
-    assert.deepEqual(generator.next(), { value: ['b'], done: false });
-    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
-    assert.deepEqual(generator.next(), { value: ['d'], done: false });
-    assert.deepEqual(generator.next(), { value: ['e'], done: false });
-    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
-    assert.deepEqual(generator.next(), { value: ['h'], done: false });
-    assert.deepEqual(generator.next(), { value: ['m'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 1, v: ['z'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 3, v: ['c', 'c2'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 4, v: ['d'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 5, v: ['e'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 6, v: ['f', 'g'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 8, v: ['h'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 10, v: ['m'] }, done: true });
 
     // no limit
     generator = tree.values({ key: 3, target: 'n' });
-    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
-    assert.deepEqual(generator.next(), { value: ['d'], done: false });
-    assert.deepEqual(generator.next(), { value: ['e'], done: false });
-    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
-    assert.deepEqual(generator.next(), { value: ['h'], done: false });
-    assert.deepEqual(generator.next(), { value: ['m'], done: false });
-    assert.deepEqual(generator.next(), { value: ['n'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 3, v: ['c', 'c2'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 4, v: ['d'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 5, v: ['e'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 6, v: ['f', 'g'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 8, v: ['h'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 10, v: ['m'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 11, v: ['n'] }, done: true });
 
     // no limit
     generator = tree.values({ key: 2 });
-    assert.deepEqual(generator.next(), { value: ['b'], done: false });
-    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
-    assert.deepEqual(generator.next(), { value: ['d'], done: false });
-    assert.deepEqual(generator.next(), { value: ['e'], done: false });
-    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
-    assert.deepEqual(generator.next(), { value: ['h'], done: false });
-    assert.deepEqual(generator.next(), { value: ['m'], done: false });
-    assert.deepEqual(generator.next(), { value: ['n'], done: false });
-    assert.deepEqual(generator.next(), { value: ['p'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 3, v: ['c', 'c2'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 4, v: ['d'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 5, v: ['e'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 6, v: ['f', 'g'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 8, v: ['h'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 10, v: ['m'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 11, v: ['n'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 12, v: ['p'] }, done: true });
 
     // no key, assume first key, limit respected
     generator = tree.values({ target: 'n', limit: 5 });
-    assert.deepEqual(generator.next(), { value: ['z'], done: false });
-    assert.deepEqual(generator.next(), { value: ['b'], done: false });
-    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
-    assert.deepEqual(generator.next(), { value: ['d'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 1, v: ['z'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 3, v: ['c', 'c2'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 4, v: ['d'] }, done: true });
 
     // no key, assume first key, target
     generator = tree.values({ target: 'd', limit: 10 });
-    assert.deepEqual(generator.next(), { value: ['z'], done: false });
-    assert.deepEqual(generator.next(), { value: ['b'], done: false });
-    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
-    assert.deepEqual(generator.next(), { value: ['d'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 1, v: ['z'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 3, v: ['c', 'c2'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 4, v: ['d'] }, done: true });
 
     // nothing, generate everything
     generator = tree.values();
-    assert.deepEqual(generator.next(), { value: ['z'], done: false });
-    assert.deepEqual(generator.next(), { value: ['b'], done: false });
-    assert.deepEqual(generator.next(), { value: ['c', 'c2'], done: false });
-    assert.deepEqual(generator.next(), { value: ['d'], done: false });
-    assert.deepEqual(generator.next(), { value: ['e'], done: false });
-    assert.deepEqual(generator.next(), { value: ['f', 'g'], done: false });
-    assert.deepEqual(generator.next(), { value: ['h'], done: false });
-    assert.deepEqual(generator.next(), { value: ['m'], done: false });
-    assert.deepEqual(generator.next(), { value: ['n'], done: false });
-    assert.deepEqual(generator.next(), { value: ['p'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 1, v: ['z'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 3, v: ['c', 'c2'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 4, v: ['d'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 5, v: ['e'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 6, v: ['f', 'g'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 8, v: ['h'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 10, v: ['m'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 11, v: ['n'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 12, v: ['p'] }, done: true });
 
     tree = new BPlusTree({ order: 6, debug: true });
     const data = [[1, 'z'], [2, 'b'], [2, 'b2'], [2, 'b3'], [2, 'b4'], [5, 'e']];
@@ -287,37 +301,37 @@ describe('BPlusTree', () => {
 
     // limit is respected
     generator = tree.values({ key: 1, limit: 1 });
-    assert.deepEqual(generator.next(), { value: ['z'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 1, v: ['z'] }, done: true });
 
     // limit is respected
     generator = tree.values({ key: 1, limit: 2 });
-    assert.deepEqual(generator.next(), { value: ['z'], done: false });
-    assert.deepEqual(generator.next(), { value: ['b'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 1, v: ['z'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b'] }, done: true });
 
     // limit is respected
     generator = tree.values({ key: 1, limit: 3 });
-    assert.deepEqual(generator.next(), { value: ['z'], done: false });
-    assert.deepEqual(generator.next(), { value: ['b', 'b2'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 1, v: ['z'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b', 'b2'] }, done: true });
 
     // limit is respected
     generator = tree.values({ key: 1, limit: 4 });
-    assert.deepEqual(generator.next(), { value: ['z'], done: false });
-    assert.deepEqual(generator.next(), { value: ['b', 'b2', 'b3'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 1, v: ['z'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b', 'b2', 'b3'] }, done: true });
 
     // limit is respected
     generator = tree.values({ key: 1, limit: 5 });
-    assert.deepEqual(generator.next(), { value: ['z'], done: false });
-    assert.deepEqual(generator.next(), { value: ['b', 'b2', 'b3', 'b4'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 1, v: ['z'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b', 'b2', 'b3', 'b4'] }, done: true });
 
     // limit is respected
     generator = tree.values({ key: 1, limit: 6 });
-    assert.deepEqual(generator.next(), { value: ['z'], done: false });
-    assert.deepEqual(generator.next(), { value: ['b', 'b2', 'b3', 'b4'], done: false });
-    assert.deepEqual(generator.next(), { value: ['e'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 1, v: ['z'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b', 'b2', 'b3', 'b4'] }, done: false });
+    assert.deepEqual(generator.next(), { value: { k: 5, v: ['e'] }, done: true });
 
     // limit is respected
     generator = tree.values({ key: 2, limit: 2 });
-    assert.deepEqual(generator.next(), { value: ['b', 'b2'], done: true });
+    assert.deepEqual(generator.next(), { value: { k: 2, v: ['b', 'b2'] }, done: true });
   });
 
   it('should check', () => {

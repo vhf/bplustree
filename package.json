@@ -8,7 +8,7 @@
     "coverage": "babel-node node_modules/isparta/bin/isparta cover ./node_modules/mocha/bin/_mocha -- test/bplustree.js",
     "coverage-full": "./node_modules/.bin/babel-node ./node_modules/.bin/babel-istanbul cover ./node_modules/.bin/_mocha -- test/bplustree.js test/full.js",
     "coveralls": "npm run coverage-full && cat /home/travis/build/vhf/bplustree/coverage/lcov.info | coveralls",
-    "doc": "jsdoc lib -d docs",
+    "doc": "jsdoc -c .jsdoc lib -d docs",
     "build": "babel lib -d dist"
   },
   "devDependencies": {
