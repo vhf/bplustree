@@ -1,9 +1,10 @@
-const BPlusTree = require('../dist/bplustree');
-const Benchmark = require('benchmark');
-const async = require('async');
-const colors = require('colors');
-const faker = require('faker');
-const _ = require('lodash');
+// @flow
+const BPlusTree = require('../lib/bplustree');
+const Benchmark = require('benchmark'); // eslint-disable-line import/no-extraneous-dependencies
+const async = require('async'); // eslint-disable-line import/no-extraneous-dependencies
+const colors = require('colors'); // eslint-disable-line import/no-extraneous-dependencies
+const faker = require('faker'); // eslint-disable-line import/no-extraneous-dependencies
+const _ = require('lodash'); // eslint-disable-line import/no-extraneous-dependencies
 
 Benchmark.support.decompilation = false;
 
@@ -11,10 +12,10 @@ const db = [];
 const dbSize = 2000;
 const bf = 300;
 
-const compileResult = (results) => {
+const compileResult = (results: {}): string => {
   const method = [];
   for (let i = 4; i <= bf; i += 2) {
-    method.push('bf ' + i);
+    method.push(`bf ${i}`);
   }
 
   let text = '';
@@ -47,15 +48,15 @@ for (let i = 0; i < dbSize; i++) {
 const lowerBound = db[Math.floor(dbSize / 5)].key;
 const upperBound = db[dbSize - Math.floor(dbSize / 5)].key;
 
-const buildTest = function bt(order) {
+const buildTest = function bt(order: number): {} {
   let tree;
   return {
-    name: 'bf ' + order,
+    name: `bf ${order}`,
     setup: () => {
-      tree = new BPlusTree({ order: order });
-      for (const rec of db) {
-        tree.store(rec.key, rec.value);
-      }
+      tree = new BPlusTree({ order });
+      Object.values(db).forEach(({ key, value }) => {
+        tree.store(key, value);
+      });
     },
     fn: () => {
       const keys = tree.repr({ getKeys: true }).reverse();

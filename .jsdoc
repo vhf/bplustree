@@ -1,3 +1,12 @@
 {
-    "plugins": ["plugins/markdown"]
+  "plugins": [
+    "node_modules/jsdoc-babel",
+    "plugins/markdown"
+  ],
+  "babel": {
+    "extensions": ["js"],
+    "plugins": [
+      "transform-flow-strip-types"
+    ]
+  }
 }

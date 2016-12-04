@@ -1,0 +1,9 @@
+[ignore]
+test/*
+
+[include]
+lib/*
+
+[libs]
+
+[options]

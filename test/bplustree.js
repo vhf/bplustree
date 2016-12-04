@@ -187,7 +187,7 @@ describe('BPlusTree', () => {
     // key doesn't exist: not there
     // user might want to use `keyNotFound`
     generator = tree.values({ key: 7, target: 'n', limit: 10 });
-    assert.deepEqual(generator.next(), { value: false, done: true });
+    assert.deepEqual(generator.next(), { value: undefined, done: true });
     assert.deepEqual(generator.next(), { value: undefined, done: true });
 
     // limit is bigger than the number of remaining values

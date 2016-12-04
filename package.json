@@ -9,20 +9,34 @@
     "coverage-full": "./node_modules/.bin/babel-node ./node_modules/.bin/babel-istanbul cover ./node_modules/.bin/_mocha -- test/bplustree.js test/full.js",
     "coveralls": "npm run coverage-full && cat /home/travis/build/vhf/bplustree/coverage/lcov.info | coveralls",
     "doc": "jsdoc -c .jsdoc lib -d docs",
-    "build": "babel lib -d dist"
+    "build": "babel lib -d dist",
+    "eslint": "eslint .",
+    "flow": "flow check",
+    "lint": "npm run eslint && npm run flow"
   },
   "devDependencies": {
+    "async": "^2.1.4",
     "babel-cli": "^6.3.15",
     "babel-core": "^6.3.15",
     "babel-eslint": "^7.1.0",
     "babel-istanbul": "^0.11.0",
+    "babel-plugin-syntax-flow": "^6.18.0",
+    "babel-plugin-transform-flow-strip-types": "^6.18.0",
     "babel-plugin-transform-regenerator": "^6.16.1",
     "babel-preset-latest": "^6.16.0",
+    "benchmark": "^2.1.2",
+    "colors": "^1.1.2",
     "coveralls": "^2.11.6",
     "eslint": "^3.9.1",
     "eslint-config-airbnb-base": "^10.0.1",
+    "eslint-plugin-flowtype": "^2.29.1",
+    "eslint-plugin-flowtype-errors": "^1.5.0",
     "eslint-plugin-import": "^2.1.0",
+    "faker": "^3.1.0",
+    "flow-bin": "^0.36.0",
     "istanbul": "^0.4.5",
+    "jsdoc-babel": "^0.2.1",
+    "lodash": "^4.17.2",
     "mocha": "^3.1.2",
     "mocha-lcov-reporter": "^1.0.0"
   },
@@ -30,7 +44,7 @@
   "main": "dist/bplustree.js",
   "dependencies": {
     "babel-polyfill": "^6.16.0",
-    "regenerator-runtime": "^0.9.6"
+    "regenerator-runtime": "^0.10.0"
   },
   "repository": {
     "type": "git",

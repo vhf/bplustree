@@ -26,17 +26,34 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>import 'regenerator-runtime/runtime';
+            <pre class="prettyprint source linenums"><code>// @flow
+import 'regenerator-runtime/runtime';
+
+type Tree = { t: string; k: number[]; v: any[]; n?: ?number };
+type CmpFn = ((a: any, b: any) => number);
 
 /** Class representing a B+ Tree. */
 class BPlusTree {
+  order: number;
+  debug: boolean;
+  cmpFn: CmpFn;
+  minKeys: number;
+  maxKeys: number;
+  numKeys: number;
+  numVals: number;
+  tree: Tree;
+
   /**
    * @param {Object} options
    * @param {number} [options.order=6] - The tree order (or branching factor or node capacity)
    * @param {boolean} [options.debug=false] - Check tree invariants after each insert / remove
    * @param {string} [options.cmpFn=numericComparison] - Comparison function to use
    */
-  constructor({ order = 6, debug = false, cmpFn = ((a, b) => (a &lt; b) ? -1 : ((a > b) ? 1 : 0)) } = {}) { // eslint-disable-line
+  constructor({
+      order = 6,
+      debug = false,
+      cmpFn = ((a: any, b: any): number => ((a &lt; b) ? -1 : ((a > b) ? 1 : 0))) // eslint-disable-line
+    }: { order?: number; debug?: boolean; cmpFn?: CmpFn } = {}) {
     this.order = order;
     this.debug = debug;
     this.cmpFn = cmpFn;
@@ -61,10 +78,13 @@ class BPlusTree {
    * @param {boolean} [options.descending=false] - Get it reversed (only works if options.getKeys or options.getValues)
    * @return {{keys: values}|Keys[]|Values[]}
    */
-  repr({ root = this.tree, getKeys = false, getValues = false, descending = false } = {}) {
-    const tree = root;
-    const result = (getKeys || getValues) ? [] : {};
-    function walk(node) {
+  repr({ root, getKeys = false, getValues = false, descending = false }:
+       { root?: Tree; getKeys?: boolean; getValues?: boolean; descending?: boolean } = {}): Object | any[] {
+    const tree = root || this.tree;
+    let resultArray = [];
+    const resultObject = {};
+
+    function walk(node: Tree) {
       if (node.t === 'branch') {
         const kids = node.v;
         for (let i = 0, kl = kids.length; i &lt; kl; i++) {
@@ -73,23 +93,28 @@ class BPlusTree {
       } else if (node.t === 'leaf') {
         for (let i = 0, nkl = node.k.length; i &lt; nkl; i++) {
           if (getKeys) {
-            result.push(node.k[i]);
+            resultArray.push(node.k[i]);
           } else if (getValues) {
-            result.push(node.v[i]);
+            resultArray.push(node.v[i]);
           } else {
-            result[node.k[i]] = node.v[i];
+            resultObject[node.k[i]] = node.v[i];
           }
         }
       }
     }
     walk(tree);
-    const out = (result.length &amp;&amp; Array.isArray(result[0])) ?
-      Array.prototype.concat.apply([], result) : result;
-
-    if ((getKeys || getValues) &amp;&amp; descending) {
-      return out.reverse();
+    // if (Array.isArra)
+    if (resultArray.length &amp;&amp; resultArray[0].length) {
+      resultArray = Array.prototype.concat.apply([], resultArray);
     }
-    return out;
+
+    if (resultArray.length &amp;&amp; descending) {
+      return resultArray.reverse();
+    }
+    if (resultArray.length) {
+      return resultArray;
+    }
+    return resultObject;
   }
 
   /**
@@ -100,7 +125,7 @@ class BPlusTree {
    * @param {boolean} [options.descending=false] - Get it reversed (only works if options.keys or options.values)
    * @return {Values[]} A flat array of values, or empty array.
    */
-  fetchRange(lowerBound, upperBound, { descending = false } = {}) {
+  fetchRange(lowerBound: number, upperBound: number, { descending = false }: { descending: boolean } = {}): any[] {
     const hi = upperBound;
     let lo = lowerBound;
 
@@ -189,21 +214,24 @@ class BPlusTree {
    * @param {string} [options.keyNotFound] - See `notFound` of `BPlusTree.fetch`
    * @return {Generator} - e.g. `{ value: { k: 6, v: ['f', 'g'] }, done: false }`
    */
-  * values({ key, target, limit = Infinity, keyNotFound } = {}) {
+  * values({ key, target, limit = Infinity, keyNotFound }:
+           { key: any; target: any; limit: number; keyNotFound: ?string } = {}): Generator&lt;any, ?Object, void> {
     let returned = 0;
     let leaf;
-    if (typeof key === 'undefined') {
-      key = -Infinity;
-      keyNotFound = 'right';
+    let _key = key;
+    let _keyNotFound = keyNotFound;
+    if (typeof _key === 'undefined') {
+      _key = -Infinity;
+      _keyNotFound = 'right';
     }
-    leaf = this.fetch(key, { getLeaf: true, notFound: keyNotFound });
+    leaf = this.fetch(_key, { getLeaf: true, notFound: _keyNotFound });
 
     if (!leaf) {
-      return false;
+      return undefined;
     }
 
-    while (true) {
-      let index = leaf.k.indexOf(key);
+    while (true) { // eslint-disable-line no-constant-condition
+      let index = leaf.k.indexOf(_key);
       if (index === -1) {
         index = 0;
       }
@@ -225,11 +253,12 @@ class BPlusTree {
         yield { k: leaf.k[i], v: leaf.v[i] };
       }
       if (leaf.n !== null) {
-        leaf = this.fetch(leaf.n, { getLeaf: true, notFound: keyNotFound });
+        leaf = this.fetch(leaf.n, { getLeaf: true, notFound: _keyNotFound });
       } else {
         break;
       }
     }
+    return undefined;
   }
 
   /**
@@ -238,8 +267,8 @@ class BPlusTree {
    * @param {BPTree.tree} [options.root=this.tree] - Tree to use
    * @return {number} Computed depth
    */
-  depth({ root = this.tree } = {}) {
-    let tree = root;
+  depth({ root }: { root: Tree } = {}): number {
+    let tree = root || this.tree;
     let d = 0;
     while (tree.t === 'branch') {
       tree = tree.v[0];
@@ -254,16 +283,17 @@ class BPlusTree {
    * @param {BPTree.tree} [options.root=this.tree] - Tree to check
    * @return {boolean} Returns `true` or throws an `Error()`
    */
-  check({ root = this.tree } = {}) {
-    const depth = this.depth({ root });
+  check({ root }: { root: Tree } = {}): boolean {
+    const _root = root || this.tree;
+    const depth = this.depth({ root: _root });
 
-    function assert(expr, msg) {
+    function assert(expr: boolean, msg: string) {
       if (!expr) {
         throw new Error(msg);
       }
     }
 
-    function checking(self, currentNode, currentDepth, lo, hi) {
+    function checking(self: BPlusTree, currentNode: Tree, currentDepth: number, lo: any[], hi: any[]): boolean {
       const node = currentNode;
       const keysLength = node.k.length;
 
@@ -306,7 +336,7 @@ class BPlusTree {
       return true;
     }
 
-    return checking(this, root, 0, [], []);
+    return checking(this, _root, 0, [], []);
   }
 
   /**
@@ -324,8 +354,9 @@ class BPlusTree {
    * @param {string} [options.notFound] - either 'left' or 'right' - Return what was found left or right from key which doesn't exist
    * @return {Value|Value[]|Leaf|Object|Boolean}
    */
-  fetch(key, { root = this.tree, getLeaf = false, getPath = false, notFound } = {}) {
-    let node = root;
+  fetch(key: any, { root, getLeaf = false, getPath = false, notFound }:
+                  { root?: Tree; getLeaf?: boolean; getPath?: boolean; notFound?: ?string } = {}): any {
+    let node = root || this.tree;
 
     let index;
     const path = [];
@@ -383,7 +414,7 @@ class BPlusTree {
     return false;
   }
 
-  _doStore(key, value) {
+  _doStore(key: any, value: any) {
     const path = [];
     let node = this.tree;
 
@@ -400,7 +431,7 @@ class BPlusTree {
       if (!found) {
         i = node.k.length;
       }
-      path.push({ t: node.t, k: node.k, v: node.v, i: i });
+      path.push({ t: node.t, k: node.k, v: node.v, i });
       node = node.v[i];
     }
 
@@ -462,7 +493,7 @@ class BPlusTree {
    * @param {Value} value
    * @return {boolean} true
    */
-  store(key, value) {
+  store(key: any, value: any): boolean {
     this._doStore(key, value);
     if (this.debug) {
       this.check();
@@ -470,8 +501,8 @@ class BPlusTree {
     return true;
   }
 
-  _get(path, node = this.tree) {
-    let object = node;
+  _get(path: number[], node?: Tree): Object {
+    let object = node || this.tree;
     let index = 0;
     const length = path.length;
 
@@ -481,40 +512,40 @@ class BPlusTree {
     return object;
   }
 
-  _genGetKeyFn(driller, depth) {
+  _genGetKeyFn(driller: (tree: Tree) => any, depth: number): (tree: Tree) => any {
     if (depth === 0) {
-      return (o) => driller(o).k[0];
+      return (o: Tree): any => driller(o).k[0];
     }
-    return this._genGetKeyFn((o) => driller(o).v[0], depth - 1);
+    return this._genGetKeyFn((o: Tree): any => driller(o).v[0], depth - 1);
   }
 
-  _getFirstKeyFn(depth) {
+  _getFirstKeyFn(depth: number): (tree: Tree) => any {
     const fn = [
-      (o) => o,
-      (o) => o.v[0],
-      (o) => o.v[0].v[0],
-      (o) => o.v[0].v[0].v[0],
-      (o) => o.v[0].v[0].v[0].v[0],
-      (o) => o.v[0].v[0].v[0].v[0].v[0],
-      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0],
-      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0],
-      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
-      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
-      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
-      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
-      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
-      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
-      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
-      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
-      (o) => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o: Tree): any => o,
+      (o: Tree): any => o.v[0],
+      (o: Tree): any => o.v[0].v[0],
+      (o: Tree): any => o.v[0].v[0].v[0],
+      (o: Tree): any => o.v[0].v[0].v[0].v[0],
+      (o: Tree): any => o.v[0].v[0].v[0].v[0].v[0],
+      (o: Tree): any => o.v[0].v[0].v[0].v[0].v[0].v[0],
+      (o: Tree): any => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o: Tree): any => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o: Tree): any => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o: Tree): any => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o: Tree): any => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o: Tree): any => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o: Tree): any => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o: Tree): any => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o: Tree): any => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
+      (o: Tree): any => o.v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0].v[0],
     ];
     const length = fn.length;
-    return (depth &lt; length - 1 &amp;&amp; ((o) => fn[depth](o).k[0])) || this._genGetKeyFn(fn[length - 1], depth - length + 1);
+    return (depth &lt; length - 1 &amp;&amp; ((o: Tree): any => fn[depth](o).k[0])) || this._genGetKeyFn(fn[length - 1], (depth - length) + 1);
   }
 
-  _fixKeys() {
+  _fixKeys(): any {
     const result = [];
-    function walk(node, depth, path) {
+    function walk(node: Tree, depth: number, path: any) {
       if (node.t === 'branch') {
         const kids = node.v;
         for (let i = 0, kl = kids.length; i &lt; kl; i++) {
@@ -529,7 +560,7 @@ class BPlusTree {
     walk(this.tree, 0, []);
     result.sort((a, b) => (a.length > b.length) ? -1 : ((a.length &lt; b.length) ? 1 : 0)); // eslint-disable-line
 
-    result.forEach((path) => {
+    result.forEach((path: any) => {
       const sub = this._get(path);
       sub.k = sub.v.slice(1).map(this._getFirstKeyFn(result[0].length - path.length));
     });
@@ -541,7 +572,7 @@ class BPlusTree {
     return result;
   }
 
-  _removeKey(key, val) {
+  _removeKey(key: any, val: any): boolean | Object {
     const fetched = this.fetch(key, { getPath: true });
 
     if (!fetched) {
@@ -575,14 +606,14 @@ class BPlusTree {
     }
 
     // we lost one val
-    this.numvals--;
+    this.numVals--;
     return { val: removed, leaf: fetched.leaf, path: fetched.path };
   }
 
-  _doRemove(key, val) {
+  _doRemove(key: any, val: any): boolean | any {
     // get leaf for key, remove key from leaf
     const removed = this._removeKey(key, val);
-    if (!removed) {
+    if (typeof removed === 'boolean') {
       return false;
     }
     const leaf = removed.leaf;
@@ -599,7 +630,6 @@ class BPlusTree {
     }
 
     const leafIndex = path[path.length - 1];
-
     // else borrow
 
     // if rightSibling is more than half full, borrow leftmost value
@@ -614,7 +644,7 @@ class BPlusTree {
         leaf.k.push(keyToBorrow);
         leaf.v.push(valBorrowed);
         leaf.n = rightSibling.k[0];
-        parent.k = parent.v.slice(1).map((o) => o.k[0]);
+        parent.k = parent.v.slice(1).map((o: Object): any => o.k[0]);
         parent.v[leafIndex] = leaf;
         parent.v[leafIndex + 1] = rightSibling;
       }
@@ -631,7 +661,7 @@ class BPlusTree {
         const valBorrowed = leftSibling.v.pop();
         leaf.k.unshift(keyToBorrow);
         leaf.v.unshift(valBorrowed);
-        parent.k = parent.v.slice(1).map((o) => o.k[0]);
+        parent.k = parent.v.slice(1).map((o: Object): any => o.k[0]);
         parent.v[leafIndex] = leaf;
         parent.v[leafIndex - 1] = leftSibling;
       }
@@ -639,7 +669,7 @@ class BPlusTree {
 
     if (!canBorrowRight &amp;&amp; !canBorrowLeft) {
       let again = true;
-      let lastIndex;
+      let lastIndex = -1;
       while (again) {
         parent = this._get(path);
         lastIndex = index;
@@ -671,7 +701,7 @@ class BPlusTree {
             }
             // merging with left, deleting sibling
             // node becomes (sibling merged with node)
-            parent.v[lastIndex] = this._mergeLeft(parent.v[lastIndex - 1], parent.v[lastIndex]);
+            parent.v[lastIndex] = BPlusTree._mergeLeft(parent.v[lastIndex - 1], parent.v[lastIndex]);
             parent.v.splice(lastIndex, 1); // delete now merged sibling
           } else if (rightExists) {
             if (!roomOnRight) {
@@ -679,7 +709,7 @@ class BPlusTree {
             }
             // merging with right, deleting sibling
             // node becomes (node merged with sibling)
-            parent.v[lastIndex] = this._mergeRight(parent.v[lastIndex + 1], parent.v[lastIndex]);
+            parent.v[lastIndex] = BPlusTree._mergeRight(parent.v[lastIndex + 1], parent.v[lastIndex]);
             parent.v.splice(lastIndex + 1, 1); // delete now merged sibling
           }
           if (splitIndex !== false) {
@@ -688,9 +718,9 @@ class BPlusTree {
             const leftContent = branchToSplit.v.slice(0, mid);
             const rightContent = branchToSplit.v.slice(mid);
             const childType = parent.t;
-            const left = { t: childType, k: leftContent.slice(1).map((o) => o.k[0]), v: leftContent };
-            const right = { t: childType, k: rightContent.slice(1).map((o) => o.k[0]), v: rightContent };
-            parent.v.splice.apply(parent.v, [splitIndex, 1].concat([left, right]));
+            const left = { t: childType, k: leftContent.slice(1).map((o: Object): any => o.k[0]), v: leftContent };
+            const right = { t: childType, k: rightContent.slice(1).map((o: Object): any => o.k[0]), v: rightContent };
+            parent.v.splice(splitIndex, 1, left, right);
           }
         }
       }
@@ -714,7 +744,7 @@ class BPlusTree {
           this.tree = this.tree.v[index];
           const slice = this.tree.v.slice(1);
           if (slice.length &amp;&amp; slice[0].t) {
-            this.tree.k = slice.map((n) => n.k[0]);
+            this.tree.k = slice.map((o: Object): any => o.k[0]);
           }
         }
       }
@@ -730,7 +760,7 @@ class BPlusTree {
    * @param {Value?} value
    * @return {Value} The removed value
    */
-  remove(key, value) {
+  remove(key: any, value: any): any {
     const removed = this._doRemove(key, value);
     if (this.debug) {
       this.check();
@@ -738,20 +768,23 @@ class BPlusTree {
     return removed;
   }
 
-  _mergeLeft(dest, src) {
-    dest.k = dest.k.concat(src.k);
-    dest.v = dest.v.concat(src.v);
-    dest.n = src.n;
-    return dest;
+  static _mergeLeft(dest: Tree, src: Tree): Tree {
+    const node = dest;
+    node.k = node.k.concat(src.k);
+    node.v = node.v.concat(src.v);
+    node.n = src.n;
+    return node;
   }
 
-  _mergeRight(dest, src) {
+  static _mergeRight(dest: Tree, _src: Tree): Tree {
+    const node = dest;
+    const src = _src;
     if (src.t !== 'leaf') {
-      src.v[src.v.length - 1].n = dest.v[0].k[0];
+      src.v[src.v.length - 1].n = node.v[0].k[0];
     }
-    dest.k = src.k.concat(dest.k);
-    dest.v = src.v.concat(dest.v);
-    return dest;
+    node.k = src.k.concat(node.k);
+    node.v = src.v.concat(node.v);
+    return node;
   }
 }
 
@@ -772,7 +805,7 @@ module.exports = BPlusTree;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Wed Nov 16 2016 00:33:20 GMT+0100 (CET)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Mon Dec 05 2016 00:10:48 GMT+0100 (CET)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -1,4 +1,8 @@
 {
   "presets": ["latest"],
-  "plugins": ["transform-regenerator"]
+  "plugins": [
+    "transform-regenerator",
+    "syntax-flow",
+    "transform-flow-strip-types"
+  ]
 }
