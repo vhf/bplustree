@@ -5,23 +5,29 @@ parserOptions:
 
 # register plugins
 plugins:
+  - jest
   - flowtype
   - flowtype-errors
 
 # use the rules of eslint-config-airbnb
 extends:
   - airbnb-base
+  - plugin:flowtype/recommended
 
 # register environments
 env:
   browser: true
   node: true
+  "jest/globals": true
 
 rules:
   max-len: [2, 150, 2, {ignoreUrls: true, ignoreComments: false}]
 
   no-plusplus: 0
   no-underscore-dangle: 0
+
+  prefer-destructuring: 0
+  lines-between-class-members: 0
 
   flowtype-errors/show-errors: 2
 
