@@ -1,13 +1,14 @@
 {
   "name": "bplustree",
   "version": "1.2.2",
+  "engines": {
+    "node": ">=8.0.0"
+  },
   "scripts": {
-    "test": "mocha --compilers js:babel-core/register --check-leaks test/bplustree.js && npm run build",
-    "test-full": "mocha --compilers js:babel-core/register --check-leaks test/bplustree.js test/full.js",
-    "test-travis": "npm run build && npm run test-full && npm run coverage-full",
-    "coverage": "babel-node node_modules/isparta/bin/isparta cover ./node_modules/mocha/bin/_mocha -- test/bplustree.js",
-    "coverage-full": "./node_modules/.bin/babel-node ./node_modules/.bin/babel-istanbul cover ./node_modules/.bin/_mocha -- test/bplustree.js test/full.js",
-    "coveralls": "npm run coverage-full && cat /home/travis/build/vhf/bplustree/coverage/lcov.info | coveralls",
+    "test": "jest && npm run build",
+    "test-travis": "npm run build && npm run test && npm run coverage",
+    "coverage": "jest --coverage",
+    "coveralls": "npm run coverage && cat /home/travis/build/vhf/bplustree/coverage/lcov.info | coveralls",
     "doc": "jsdoc -c .jsdoc lib -d docs",
     "build": "babel lib -d dist",
     "eslint": "eslint .",
@@ -15,37 +16,32 @@
     "lint": "npm run eslint && npm run flow"
   },
   "devDependencies": {
+    "@babel/cli": "^7.1.5",
+    "@babel/core": "^7.1.6",
     "async": "^2.1.4",
-    "babel-cli": "^6.3.15",
-    "babel-core": "^6.3.15",
-    "babel-eslint": "^7.1.0",
-    "babel-istanbul": "^0.11.0",
+    "babel-eslint": "^10.0.1",
     "babel-plugin-syntax-flow": "^6.18.0",
     "babel-plugin-transform-flow-strip-types": "^6.18.0",
-    "babel-plugin-transform-regenerator": "^6.16.1",
-    "babel-preset-latest": "^6.16.0",
     "benchmark": "^2.1.2",
     "colors": "^1.1.2",
-    "coveralls": "^2.11.6",
-    "eslint": "^3.9.1",
-    "eslint-config-airbnb-base": "^10.0.1",
-    "eslint-plugin-flowtype": "^2.29.1",
-    "eslint-plugin-flowtype-errors": "^1.5.0",
+    "coveralls": "^3.0.2",
+    "eslint": "^5.9.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-flowtype": "^3.2.0",
+    "eslint-plugin-flowtype-errors": "^3.6.0",
     "eslint-plugin-import": "^2.1.0",
-    "faker": "^3.1.0",
-    "flow-bin": "^0.36.0",
+    "eslint-plugin-jest": "^22.0.0",
+    "faker": "^4.1.0",
+    "flow-bin": "^0.86.0",
     "istanbul": "^0.4.5",
-    "jsdoc-babel": "^0.2.1",
-    "lodash": "^4.17.2",
-    "mocha": "^3.1.2",
-    "mocha-lcov-reporter": "^1.0.0"
+    "jest": "^23.6.0",
+    "jsdoc": "^3.5.5",
+    "jsdoc-babel": "^0.5.0",
+    "lodash": "^4.17.2"
   },
   "description": "B+ tree",
   "main": "dist/bplustree.js",
-  "dependencies": {
-    "babel-polyfill": "^6.16.0",
-    "regenerator-runtime": "^0.10.0"
-  },
+  "dependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vhf/bplustree.git"
@@ -53,7 +49,10 @@
   "keywords": [
     "B+",
     "plus",
-    "tree"
+    "tree",
+    "B+ tree",
+    "b plus",
+    "b plus tree"
   ],
   "author": "Victor Felder",
   "license": "MIT",
