@@ -483,3 +483,31 @@ describe('BPlusTree', () => {
     }
   });
 });
+
+let tree;
+describe('regression tests', () => {
+  beforeAll(() => {
+    tree = new BPlusTree({ order: 4 });
+    tree.store(1, 'one');
+    tree.store(2, 'two');
+    tree.store(3, 'three');
+    tree.store(4, 'four');
+    tree.store(5, 'five');
+  });
+  describe('works over ranges with a new leaf and a removed element in the first leaf', () => {
+    it.only('#1', () => {
+      // https://github.com/vhf/bplustree/issues/5#issuecomment-440056079
+      debugger
+      tree.remove(3, 'three');
+      tree.fetchRange(1, 4);
+    });
+    it('#2', () => {
+      tree.remove(5, 'five'); // Removing from the new leaf, instead of the old one
+      tree.fetchRange(1, 7);
+    });
+    it('#3', () => {
+      tree.remove(3, 'three');
+      tree.fetchRange(1, 2); // Fetching a range that does not include the removed element
+    });
+  });
+});
