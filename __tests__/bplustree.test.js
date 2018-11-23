@@ -486,28 +486,39 @@ describe('BPlusTree', () => {
 
 let tree;
 describe('regression tests', () => {
-  beforeAll(() => {
-    tree = new BPlusTree({ order: 4 });
-    tree.store(1, 'one');
-    tree.store(2, 'two');
-    tree.store(3, 'three');
-    tree.store(4, 'four');
-    tree.store(5, 'five');
-  });
   describe('works over ranges with a new leaf and a removed element in the first leaf', () => {
-    it.only('#1', () => {
+    beforeEach(() => {
+      tree = new BPlusTree({ order: 4, debug: true });
+      tree.store(1, 'one');
+      tree.store(2, 'two');
+      tree.store(3, 'three');
+      tree.store(4, 'four');
+      tree.store(5, 'five');
+    });
+    it('#1a', () => {
       // https://github.com/vhf/bplustree/issues/5#issuecomment-440056079
-      debugger
       tree.remove(3, 'three');
-      tree.fetchRange(1, 4);
+      expect(tree.fetchRange(1, 4)).toEqual(['one', 'two', 'four']);
+      expect(tree.fetchRange(1, 2)).toEqual(['one', 'two']);
+      expect(tree.fetchRange(1, 3)).toEqual(['one', 'two']);
+      expect(tree.fetchRange(1, 5)).toEqual(['one', 'two', 'four', 'five']);
+    });
+    it('#1b', () => {
+      tree.remove(2, 'two');
+      expect(tree.fetchRange(1, 5)).toEqual(['one', 'three', 'four', 'five']);
+      expect(tree.fetchRange(2, 5)).toEqual(['three', 'four', 'five']);
+      expect(tree.fetchRange(3, 5)).toEqual(['three', 'four', 'five']);
+      expect(tree.fetchRange(4, 5)).toEqual(['four', 'five']);
     });
     it('#2', () => {
-      tree.remove(5, 'five'); // Removing from the new leaf, instead of the old one
-      tree.fetchRange(1, 7);
+      // Removing from the new leaf, instead of the old one
+      tree.remove(5, 'five');
+      expect(tree.fetchRange(1, 7)).toEqual(['one', 'two', 'three', 'four']);
     });
     it('#3', () => {
       tree.remove(3, 'three');
-      tree.fetchRange(1, 2); // Fetching a range that does not include the removed element
+      // Fetching a range that does not include the removed element
+      expect(tree.fetchRange(1, 2)).toEqual(['one', 'two']);
     });
   });
 });

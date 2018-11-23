@@ -156,7 +156,8 @@ class BPlusTree {
 
         if (leaf.n !== null) {
           leaf = this.fetch(leaf.n, {
-            getLeaf: true
+            getLeaf: true,
+            notFound: 'right'
           });
           index = 0;
         } else {
