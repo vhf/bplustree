@@ -54,10 +54,10 @@ class BPlusTree {
 
     function walk(node) {
       if (node.t === 'branch') {
-        const kids = node.v;
+        const children = node.v;
 
-        for (let i = 0, kl = kids.length; i < kl; i++) {
-          walk(kids[i]);
+        for (let i = 0, kl = children.length; i < kl; i++) {
+          walk(children[i]);
         }
       } else if (node.t === 'leaf') {
         for (let i = 0, nkl = node.k.length; i < nkl; i++) {
@@ -341,21 +341,21 @@ class BPlusTree {
       assert(hi.length === 0 || self.cmpFn(node.k[keysLength - 1], hi[0]) === -1, 'hi error');
 
       if (node.t === 'branch') {
-        const kids = node.v;
-        const kidsLength = kids.length;
+        const children = node.v;
+        const childrenLength = children.length;
 
         if (currentDepth === 0) {
-          assert(kidsLength >= 2, 'Underpopulated root');
+          assert(childrenLength >= 2, 'Underpopulated root');
         } else {
-          assert(kidsLength >= self.minKeys, 'Underpopulated branch');
+          assert(childrenLength >= self.minKeys, 'Underpopulated branch');
         }
 
-        assert(keysLength === kidsLength - 1, 'keys and kids don\'t correspond');
+        assert(keysLength === childrenLength - 1, 'keys and children don\'t correspond');
 
-        for (let i = 0; i < kidsLength; i++) {
+        for (let i = 0; i < childrenLength; i++) {
           const newLo = i === 0 ? lo : [node.k[i - 1]];
           const newHi = i === keysLength ? hi : [node.k[i]];
-          checking(self, kids[i], currentDepth + 1, newLo, newHi);
+          checking(self, children[i], currentDepth + 1, newLo, newHi);
         }
       } else if (node.t === 'leaf') {
         const v = node.v;
@@ -386,7 +386,7 @@ class BPlusTree {
    * @param {BPTree.tree} [options.root=this.tree] - Tree to search in
    * @param {boolean} [options.getLeaf=false] - Return the leaf containing the value(s)
    * @param {boolean} [options.getPath=false] - Return {val: value(s), leaf: leaf, path: pathFromRootToLeaf}
-   * @param {string} [options.notFound] - either 'left' or 'right' - Return what was found left or right from key which doesn't exist
+   * @param {string} [options.notFound] - either 'left' or 'right' - Return what was found left or right from key that doesn't exist
    * @return {Value|Value[]|Leaf|Object|Boolean}
    */
 
@@ -475,7 +475,7 @@ class BPlusTree {
           return val;
         }
       } else if (this.cmpFn(node.k[j], key) === 1) {
-        break; // just to finish quicker; not needed for correctness
+        break; // just to return early; not needed for correctness
       }
     }
 
@@ -640,13 +640,13 @@ class BPlusTree {
 
     function walk(node, depth, path) {
       if (node.t === 'branch') {
-        const kids = node.v;
+        const children = node.v;
 
-        for (let i = 0, kl = kids.length; i < kl; i++) {
-          if (kids[i].t === 'branch') {
+        for (let i = 0, kl = children.length; i < kl; i++) {
+          if (children[i].t === 'branch') {
             const newPath = path.slice(0, depth).concat([i]);
             result.push(newPath);
-            walk(kids[i], depth + 1, newPath);
+            walk(children[i], depth + 1, newPath);
           }
         }
       }
